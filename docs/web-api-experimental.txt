@@ -1,0 +1,526 @@
+reference: https://github.com/rescript-lang/experimental-rescript-webapi
+npm i @rescript/webapi@experimental
+
+
+examples:
+Directory Structure:
+
+└── ./
+    └── tests
+        ├── DOMAPI
+        │   ├── AddEventListener__test.res
+        │   ├── Element__test.res
+        │   ├── HTMLCanvasElement__test.res
+        │   ├── HTMLElement__test.res
+        │   ├── HTMLInputElement__test.res
+        │   └── Location__test.res
+        ├── FetchAPI
+        │   ├── FormData__test.res
+        │   ├── Headers__test.res
+        │   ├── Request__test.res
+        │   ├── Response__test.res
+        │   └── URLSearchParams__test.res
+        ├── IntersectionObserverAPI
+        │   └── IntersectionObserver__test.res
+        ├── NotificationsAPI
+        │   └── Notification__test.res
+        ├── ServiceWorkerAPI
+        │   └── ServiceWorker__test.res
+        ├── URLAPI
+        │   └── URL__test.res
+        ├── WebAudioAPI
+        │   └── AudioDestinationNode__.test.res
+        ├── WebStorageAPI
+        │   └── Storage__test.res
+        ├── WebWorkersAPI
+        │   ├── SharedWorker__test.res
+        │   └── SharedWorkerGlobalScope__test.res
+        └── Global__test.res
+
+
+
+---
+File: /tests/DOMAPI/AddEventListener__test.res
+---
+
+open WebAPI
+open WebAPI.Global
+
+let button = document->Document.querySelector("button")->Null.toOption
+let h2 = document->Document.querySelector("h2")->Null.toOption
+
+switch (button, h2) {
+| (Some(button), Some(h2)) =>
+  button->Element.addEventListener(EventAPI.Click, (e: UIEventsAPI.mouseEvent) => {
+    Console.log(`Button clicked, ${Int.toString(e.button)}`)
+    switch h2.textContent {
+    | Null => h2.textContent = Value("1")
+    | Value(text) =>
+      switch Int.fromString(text) {
+      | None => h2.textContent = Value("1")
+      | Some(number) => h2.textContent = Value(Int.toString(number + 1))
+      }
+    }
+  })
+| _ => Console.log("Stuff not found")
+}
+
+
+
+---
+File: /tests/DOMAPI/Element__test.res
+---
+
+external myElement: DOMAPI.element = "myElement"
+
+switch myElement->Element.getAttribute("foo") {
+| Null.Value(value) => value->Console.log
+| Null => "nothing"->Console.log
+}
+
+
+
+---
+File: /tests/DOMAPI/HTMLCanvasElement__test.res
+---
+
+open WebAPI.Global
+
+let myCanvas: DOMAPI.htmlCanvasElement =
+  document->Document.getElementById("myCanvas")->Prelude.unsafeConversation
+let ctx = myCanvas->HTMLCanvasElement.getContext_2D
+
+ctx.fillStyle = FillStyle.fromString("red")
+ctx->CanvasRenderingContext2D.fillRect(~x=50., ~y=50., ~w=200., ~h=200.)
+
+ctx.fillStyle = FillStyle.fromString("black")
+ctx.font = "2px Tahoma"
+ctx.textBaseline = CanvasAPI.Top
+ctx->CanvasRenderingContext2D.fillText(~text="MY TEXT", ~x=60., ~y=60.)
+
+switch ctx.fillStyle->FillStyle.decode {
+| FillStyle.String(color) => Console.log(`Color: ${color}`)
+| FillStyle.CanvasGradient(_) => Console.log("CanvasGradient")
+| FillStyle.CanvasPattern(_) => Console.log("CanvasPattern")
+}
+
+let img: DOMAPI.htmlImageElement = document->Document.createElement("img")->Obj.magic
+ctx->CanvasRenderingContext2D.drawImageWithDimensions(
+  ~image=img,
+  ~dx=0.,
+  ~dy=0.,
+  ~dw=200.,
+  ~dh=200.,
+)
+
+
+
+---
+File: /tests/DOMAPI/HTMLElement__test.res
+---
+
+open WebAPI
+open WebAPI.Global
+
+document
+->Document.querySelector("form")
+->Null.toOption
+->Option.forEach(form => {
+  form->Element.scrollIntoViewWithOptions({behavior: DOMAPI.Smooth})
+})
+
+
+
+---
+File: /tests/DOMAPI/HTMLInputElement__test.res
+---
+
+open Global
+
+let input: DOMAPI.htmlInputElement =
+  document->Document.createElement("input")->Prelude.unsafeConversation
+let value = input.value
+
+
+
+---
+File: /tests/DOMAPI/Location__test.res
+---
+
+open Global
+
+// Note that this only works when you added the `-open Global` bsc flag.
+let location = window.location
+
+// Access properties using `.`
+let href = location.href
+
+// Invoke methods using the `->TypeModule`
+location->Location.reload
+
+let a = 0
+
+
+
+---
+File: /tests/FetchAPI/FormData__test.res
+---
+
+/* This works when your form has an id of "myForm" */
+@scope(("document", "forms"))
+external myForm: DOMAPI.htmlFormElement = "myForm"
+
+let formData = FormData.make(~form=myForm)
+let phone : null<string> = formData->FormData.get("phone")
+let image : null<FileAPI.file> = formData->FormData.getFile("image")
+
+
+
+---
+File: /tests/FetchAPI/Headers__test.res
+---
+
+let h = Headers.make()
+
+h->Headers.set(~name="X-Test", ~value="1")
+
+let h2 = Headers.fromDict(dict{"X-Vegetable": "Carrot"})
+
+let h3 = Headers.fromKeyValueArray([("X-Fruit", "Apple"), ("X-Vegetable", "Carrot")])
+
+Console.log(h3->Headers.get("X-Fruit"))
+
+
+
+---
+File: /tests/FetchAPI/Request__test.res
+---
+
+let req = Request.fromURL("https://example.com")
+
+let req1 = Request.fromURL(
+  "https://example.com/api",
+  ~init={method: "POST", body: BodyInit.fromString("hello")},
+)
+
+let req2 = Request.fromRequest(req1)
+
+Console.log(await req2->Request.text)
+
+
+
+---
+File: /tests/FetchAPI/Response__test.res
+---
+
+let response = Response.fromNull(~init={status: 204})
+
+let response1 = Response.fromString(
+  "pong",
+  ~init={status: 200, headers: HeadersInit.fromDict(dict{"X-Fruit": "Peach"})},
+)
+
+
+
+---
+File: /tests/FetchAPI/URLSearchParams__test.res
+---
+
+let params1 = URLSearchParams.fromString("foo=1&bar=2")
+params1->URLSearchParams.keys->Iterator.toArray->Array.forEach(Console.log)
+
+let params2 = URLSearchParams.fromKeyValueArray([("foo", "1"), ("bar", "b")])
+params2->URLSearchParams.values->Iterator.toArray->Array.forEach(Console.log)
+
+let params3 = URLSearchParams.fromDict(dict{"foo": "1", "bar": "b"})
+params3
+->URLSearchParams.entries
+->Iterator.toArray
+->Array.forEach(((key, value)) => Console.log2(key, value))
+
+let paramStr = params3->URLSearchParams.toString
+
+
+
+---
+File: /tests/IntersectionObserverAPI/IntersectionObserver__test.res
+---
+
+let observer = IntersectionObserver.make(~callback=(entry, observer) => {
+  Console.log2(entry, observer)
+})
+
+let root = Global.document->Document.querySelector("#root")->Null.getUnsafe
+
+let observer2 = IntersectionObserver.make(
+  ~callback=(entry, observer) => {
+    Console.log2(entry, observer)
+  },
+  ~options={
+    root: root->IntersectionObserverRoot.fromElement,
+    rootMargin: "10px",
+    threshold: [0.1],
+  },
+)
+
+switch observer2.root->IntersectionObserverRoot.decode {
+| Element(_) => Console.log("Element")
+| Document(_) => Console.log("Document")
+| Null => Console.log("Null")
+}
+let rootMargin2 = observer2.rootMargin
+
+let targetElement = Global.document->Document.querySelector("#targetElement")->Null.toOption
+switch targetElement {
+| Some(e) => {
+    observer2->IntersectionObserver.observe(e)
+    observer2->IntersectionObserver.unobserve(e)
+  }
+| _ => Console.log("Target element not found.")
+}
+
+let entries2 = observer2->IntersectionObserver.takeRecords
+Console.log(entries2->Array.length)
+
+observer2->IntersectionObserver.disconnect
+
+
+
+---
+File: /tests/NotificationsAPI/Notification__test.res
+---
+
+open WebAPI.NotificationAPI
+
+let current = Notification.permission
+
+Notification.requestPermission()
+->Promise.thenResolve(notificationPermission => {
+  switch notificationPermission {
+  | Granted => Console.log("Permission granted")
+  | Denied => Console.log("Permission denied")
+  | Default => Console.log("Permission default")
+  }
+})
+->Promise.ignore
+
+
+
+---
+File: /tests/ServiceWorkerAPI/ServiceWorker__test.res
+---
+
+open WebAPI.ServiceWorkerAPI
+
+external self: serviceWorkerGlobalScope = "self"
+
+self->ServiceWorkerGlobalScope.addEventListener(EventAPI.Push, (event: PushAPI.pushEvent) => {
+  Console.log("received push event")
+
+  // Extract data
+  let (title, body) = switch event.data {
+  | Some(data) =>
+    switch data->PushMessageData.json {
+    | JSON.Object(dict{"title": JSON.String(title), "body": JSON.String(body)}) => (title, body)
+    | _ => ("???", "???")
+    }
+  | None => ("???", "???")
+  }
+
+  // Handle some data sync
+  event->PushEvent.waitUntil(self->ServiceWorkerGlobalScope.fetch("https://rescript-lang.org"))
+
+  // Show notification
+  self.registration
+  ->ServiceWorkerRegistration.showNotification(
+    ~title,
+    ~options={
+      body,
+      icon: "/icon.png",
+      actions: [{action: "open", title: "Open"}, {action: "close", title: "Close"}],
+      // For example the id of a new data entry
+      data: JSON.Number(17.),
+      vibrate: [200, 50, 200, 50, 400],
+    },
+  )
+  ->Promise.ignore
+})
+
+self->ServiceWorkerGlobalScope.addEventListener(EventAPI.NotificationClick, (
+  event: NotificationAPI.notificationEvent,
+) => {
+  Console.log(`notification clicked: ${event.action}`)
+  // Close the notification
+  event.notification->Notification.close
+
+  // Open a new window if that is relevant
+  event.notification.data
+  ->Option.flatMap(data => {
+    switch data {
+    | JSON.Number(id) => Some(Float.toString(id))
+    | _ => None
+    }
+  })
+  ->Option.forEach(id => {
+    self.clients
+    ->Clients.openWindow(`https://mywebsite.com/mydata/${id}`)
+    ->Promise.ignore
+  })
+})
+
+
+
+---
+File: /tests/URLAPI/URL__test.res
+---
+
+open WebAPI
+
+let url = URL.make(~url="/foo", ~base="https://bar.com")
+
+
+
+---
+File: /tests/WebAudioAPI/AudioDestinationNode__.test.res
+---
+
+open WebAudioAPI
+
+let ctx = AudioContext.make()
+
+let destinationNode = ctx.destination->AudioDestinationNode.asAudioNode
+let context = AudioContext.asBaseAudioContext(ctx)
+
+let osc = OscillatorNode.make(
+  ~context,
+  ~options={
+    type_: Sine,
+    frequency: 440.0,
+  },
+)
+let gain = GainNode.make(
+  ~context,
+  ~options={
+    gain: 0.3,
+  },
+)
+let _ = gain->GainNode.connect(~destinationNode)
+let _ =
+  osc
+  ->OscillatorNode.asAudioScheduledSourceNode
+  ->AudioScheduledSourceNode.connect(~destinationNode=gain->GainNode.asAudioNode)
+
+osc->OscillatorNode.start
+
+
+
+---
+File: /tests/WebStorageAPI/Storage__test.res
+---
+
+open Global
+open WebAPI.Storage
+
+for i in 0 to localStorage.length - 1 {
+  localStorage->key(i)->Null.getOr("nothing")->Console.log
+}
+
+let item1 = localStorage->getItem("foo")->Null.getOr("nothing")
+
+localStorage->setItem(~key="bar", ~value="...")
+
+localStorage->removeItem("bar")
+
+localStorage->clear
+
+
+
+---
+File: /tests/WebWorkersAPI/SharedWorker__test.res
+---
+
+open WebAPI.WebWorkersAPI
+
+let shared1: sharedWorker = SharedWorker.make("sharedworker.js")
+
+let shared2: sharedWorker = SharedWorker.makeWithName("sharedworker.js", "name")
+
+let shared3: sharedWorker = SharedWorker.makeWithOptions("sharedworker.js", {
+  name: "workerName",
+  type_: Module
+})
+
+let port: WebAPI.ChannelMessagingAPI.messagePort = SharedWorker.port(shared1)
+
+external getSelf: () => sharedWorkerGlobalScope = "self"
+
+let self = getSelf()
+
+self -> SharedWorkerGlobalScope.close
+
+
+
+---
+File: /tests/WebWorkersAPI/SharedWorkerGlobalScope__test.res
+---
+
+open WebAPI.WebWorkersAPI
+
+external getSelf: () => sharedWorkerGlobalScope = "self"
+
+let self = getSelf()
+
+self -> SharedWorkerGlobalScope.close
+
+
+
+---
+File: /tests/Global__test.res
+---
+
+open WebAPI.Global
+
+let response = await fetch("https://rescript-lang.org/")
+
+let response2 = await fetch(
+  "https://rescript-lang.org/",
+  ~init={
+    headers: HeadersInit.fromDict(
+      dict{
+        "Content-Type": "application/json",
+        "Authorization": "Bearer token",
+      },
+    ),
+    body: BodyInit.fromString(`secret=foo&response=bar`),
+  },
+)
+
+let response3 = await fetchWithRequest(
+  Request.fromURL("https://rescript-lang.org/"),
+  ~init={
+    method: "POST",
+    headers: HeadersInit.fromDict(
+      dict{
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    ),
+    body: BodyInit.fromString(`secret=foo&response=bar`),
+  },
+)
+
+removeEventListener(Mousedown, MouseEvent.preventDefault, ~options={capture: false})
+
+let registrationResult = await navigator.serviceWorker->ServiceWorkerContainer.register("/sw.js")
+let subscription = await registrationResult.pushManager->PushManager.subscribe(
+  ~options={
+    userVisibleOnly: true,
+    applicationServerKey: ApplicationServerKey.fromString("MyPublicKey"),
+  },
+)
+
+let pushSubscriptionJSON = subscription->PushSubscription.toJSON
+let (auth, p256dh) = switch pushSubscriptionJSON.keys {
+| None => ("?", "?")
+| Some(keys) => (keys.auth, keys.p256dh)
+}
+Console.log(`For subscription ${subscription.endpoint}, auth is ${auth} and p256dh is ${p256dh}`)

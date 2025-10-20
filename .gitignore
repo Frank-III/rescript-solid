@@ -1,0 +1,10 @@
+.DS_Store
+node_modules/
+dist/
+lib/
+lib/bs/
+lib/ocaml/
+.bsb.lock
+.merlin
+.vite/
+*.log

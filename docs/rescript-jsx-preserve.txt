@@ -1,0 +1,52 @@
+ReScript v12 will ship with preserve mode, which means that the JSX part of the issues of using Solid should be solved.
+
+Here's some investigation for what might now work and/or might still be broken for SolidJS to work flawlessly.
+
+Props destructuring and component names - ✅ ?
+I haven't tested thoroughly, but the @jsx.componentWithProps annotation seems to preserve the prop dot access from the main props object when I try it. It also preserves the component name as uppercase:
+
+type props = {name: string}
+
+module SolidComponent = {
+  @jsx.componentWithProps(: props)
+  let make = props => {
+    <div> {React.string(props.name)} </div>
+  }
+}
+Ignore the React. part and that I didn't turn on preserve mode just yet:
+
+function Playground$SolidComponent(props) {
+  return JsxRuntime.jsx("div", {
+    children: props.name
+  });
+}
+The props.name access is preserved.
+
+Intermediate values created when switching - ✅ ?
+When a thunk (function with no argument) returns an optional value (option<>), and is accessed inside a switch statement, the compiler will store the result of that function inside a variable and only used the variable afterwards:
+
+Isn't this the same in TypeScript? The equivalent in TS would be using a ternary, but you'd still need to call maybe() again in the ternary success branch.
+
+The ReScript equivalent would be that you'd call maybe() again in the success branch of the switch. That produces no intermediate value. This would mean your type is no longer refined and you'll need to unsafely unwrap it, but I don't see how you wouldn't also need to do that in TS...?
+
+Seems SolidJS is proposing using <For>, <If>, <Show> etc to handle these cases.
+
+Summing up
+Summing this up, I think we should have what we need to make this work in v12...? You'll need to follow a few principles to not make this break. Most of them are the same in TS, but some are ReScript specific. Enforcing those principles is probably something we can look at doing centrally for Solid if it proves to be something people want to use.
+
+I guess the next step would be to try SolidJS again in 2025, with v12 preserve mode, and see if it works now in practice.
+
+jmagaram
+jmagaram commented on May 9
+jmagaram
+(Justin Magaram)
+on May 9
+I tried this awhile ago. I remember there were problems with gentype making tsx files that broke reactivity. If gentype creates .d.ts codeless output that problem would go away.
+
+arnfaldur
+arnfaldur commented 3 weeks ago
+arnfaldur
+(Arnaldur)
+3 weeks ago
+JSX Preserve mode has been merged and is available in ReScript v12
+rescript-lang/rescript#6197
