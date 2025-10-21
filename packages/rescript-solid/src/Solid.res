@@ -132,7 +132,7 @@ external splitProps: ('props, array<string>) => ('a, 'b) = "splitProps"
 
 // DEV mode check
 @module("solid-js")
-external "DEV": {..} = "DEV"
+external \"DEV": {..} = "DEV"
 
 // Helper functions for element creation
 external array: array<element> => element = "%identity"

@@ -4,7 +4,7 @@
 type style = JsxDOMStyle.t
 type domRef
 
-type classList = Js.Dict.t<bool>
+type classList = dict<bool>
 
 type domProps = {
   ...JsxDOM.domProps,
@@ -13,4 +13,3 @@ type domProps = {
   textContent?: string,
   innerHTML?: string,
 }
-

@@ -31,6 +31,31 @@ importers:
         specifier: ^2.11.9
         version: 2.11.9(solid-js@1.9.9)(vite@5.4.21(terser@5.44.0))
 
+  examples/router:
+    dependencies:
+      '@solidjs/router':
+        specifier: ^0.15.3
+        version: 0.15.3(solid-js@1.9.9)
+      rescript:
+        specifier: 12.0.0-rc.2
+        version: 12.0.0-rc.2
+      rescript-solid:
+        specifier: workspace:*
+        version: link:../../packages/rescript-solid
+      rescript-solid-router:
+        specifier: workspace:*
+        version: link:../../packages/rescript-solid-router
+      solid-js:
+        specifier: ^1.9.9
+        version: 1.9.9
+    devDependencies:
+      vite:
+        specifier: ^5.4.21
+        version: 5.4.21(terser@5.44.0)
+      vite-plugin-solid:
+        specifier: ^2.11.9
+        version: 2.11.9(solid-js@1.9.9)(vite@5.4.21(terser@5.44.0))
+
   packages/rescript-solid:
     devDependencies:
       rescript:
@@ -48,12 +73,18 @@ importers:
       rescript:
         specifier: 12.0.0-rc.2
         version: 12.0.0-rc.2
+      rescript-solid:
+        specifier: workspace:*
+        version: link:../rescript-solid
 
   packages/rescript-solid-start:
     devDependencies:
       rescript:
         specifier: 12.0.0-rc.2
         version: 12.0.0-rc.2
+      rescript-solid:
+        specifier: workspace:*
+        version: link:../rescript-solid
       solid-start:
         specifier: ^0.3.11
         version: 0.3.11(@solidjs/meta@0.29.4(solid-js@1.9.9))(@solidjs/router@0.15.3(solid-js@1.9.9))(solid-js@1.9.9)(vite@5.4.21(terser@5.44.0))
