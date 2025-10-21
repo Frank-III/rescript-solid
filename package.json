@@ -1,38 +1,12 @@
 {
-  "name": "rescript-solid",
-  "version": "0.1.0",
-  "description": "ReScript bindings for Solid.js",
-  "keywords": [
-    "rescript",
-    "solid-js",
-    "solidjs",
-    "bindings"
-  ],
-  "author": "",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Frank-III/rescript-solid"
-  },
-  "main": "src/Solid.res.mjs",
+  "name": "rescript-solid-monorepo",
+  "private": true,
+  "packageManager": "pnpm@10.18.0",
   "scripts": {
-    "build": "rescript",
-    "clean": "rescript clean",
-    "watch": "rescript -w"
-  },
-  "files": [
-    "src/*.res",
-    "src/*.resi",
-    "src/*.res.mjs",
-    "rescript.json",
-    "README.md"
-  ],
-  "peerDependencies": {
-    "rescript": ">=12.0.0",
-    "solid-js": ">=1.8.0"
+    "build": "turbo run build",
+    "clean": "turbo run clean"
   },
   "devDependencies": {
-    "rescript": "12.0.0-rc.2",
-    "solid-js": "^1.9.0"
+    "turbo": "^2.5.8"
   }
 }
