@@ -97,10 +97,7 @@ module Dynamic = {
 module Scope = {
   @jsx.component
   let make = (~children: unit => element, ()) => {
-    createRoot(dispose => {
-      onCleanup(() => dispose())
-    })
-    children()
+    createRoot(_dispose => children())
   }
 }
 
@@ -109,4 +106,3 @@ module NoHydration = {
   @module("solid-js/web")
   external make: Jsx.component<props> = "NoHydration"
 }
-

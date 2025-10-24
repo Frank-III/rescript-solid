@@ -11,15 +11,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@solidjs/router": "^0.15.3",
     "rescript": "12.0.0-rc.2",
     "rescript-solid": "workspace:*",
     "rescript-solid-router": "workspace:*",
-    "solid-js": "^1.9.9",
-    "@solidjs/router": "^0.15.3"
+    "solid-js": "^1.9.9"
   },
   "devDependencies": {
-    "vite": "^5.4.21",
-    "vite-plugin-solid": "^2.11.9"
+    "vite": "^7.1.12",
+    "vite-plugin-solid": "^2.11.10"
   }
 }
-

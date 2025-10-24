@@ -68,7 +68,7 @@ function Features(props) {
       {"Memo + Effect"}
     </h3>
     {SolidJs.createEffect(() => {
-      console.log("n=" + String(n()) + ", doubled=" + String(doubled()));
+      console.log("n=" + n().toString() + ", doubled=" + doubled().toString());
     }), <div>
       <button
         onClick={param => setN(prev => prev + 1 | 0)}

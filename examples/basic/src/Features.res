@@ -39,7 +39,7 @@ let make = () => {
     {
       let (n, setN) = createSignal(1)
       let doubled = createMemo(() => n() * 2)
-      createEffect(() => Console.log("n=" ++ Belt.Int.toString(n()) ++ ", doubled=" ++ Belt.Int.toString(doubled())))
+      createEffect(() => Console.log("n=" ++ Int.toString(n()) ++ ", doubled=" ++ Int.toString(doubled())))
       <div>
         <button onClick={_ => setN(prev => prev + 1)}> {string("Inc")} </button>
         <div>
@@ -61,4 +61,3 @@ let make = () => {
     }
   </div>
 }
-

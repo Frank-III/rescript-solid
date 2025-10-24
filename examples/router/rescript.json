@@ -6,4 +6,3 @@
   "suffix": ".mjs",
   "dependencies": ["rescript-solid", "rescript-solid-router"]
 }
-

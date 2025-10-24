@@ -6,27 +6,28 @@ import * as Router from "@solidjs/router";
 
 let P = {};
 
-let TypedParams = SolidRouter.MakeParams(P);
+let Params = SolidRouter.MakeParams(P);
 
-function User(props) {
-  let params = Router.useParams();
-  let name = params.name;
+function Foo(props) {
+  let p = Router.useParams();
   return <div>
     <h2>
-      {"User: "}
-      {name}
+      {"Foo wildcard"}
     </h2>
+    <p>
+      {p.any}
+    </p>
   </div>;
 }
 
 let R;
 
-let make = User;
+let make = Foo;
 
 export {
   R,
   P,
-  TypedParams,
+  Params,
   make,
 }
-/* TypedParams Not a pure module */
+/* Params Not a pure module */

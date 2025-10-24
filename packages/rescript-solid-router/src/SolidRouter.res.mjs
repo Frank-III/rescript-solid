@@ -3,8 +3,6 @@
 
 let Router = {};
 
-let Routes = {};
-
 let Route = {};
 
 let RouteEl = {};
@@ -19,11 +17,24 @@ let Link = {};
 
 let Navigate = {};
 
+let Data = {};
+
+function MakeParams(P) {
+  return {};
+}
+
+function MakeSearchParams(S) {
+  return {};
+}
+
+function MakeAction(A) {
+  return {};
+}
+
 let A = {};
 
 export {
   Router,
-  Routes,
   Route,
   RouteEl,
   RouterRoot,
@@ -31,6 +42,10 @@ export {
   MemoryRouter,
   Link,
   Navigate,
+  Data,
+  MakeParams,
+  MakeSearchParams,
+  MakeAction,
   A,
 }
 /* No side effect */

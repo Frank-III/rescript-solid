@@ -4,6 +4,8 @@ dist/
 lib/
 lib/bs/
 lib/ocaml/
+.jsx
+examples/**/src/*.jsx
 .bsb.lock
 .merlin
 .vite/
