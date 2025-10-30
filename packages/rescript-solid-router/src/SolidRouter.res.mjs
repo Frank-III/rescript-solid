@@ -5,9 +5,11 @@ let Router = {};
 
 let Route = {};
 
-let RouteEl = {};
+let RouteAdvanced = {};
 
-let RouterRoot = {};
+let RouteWrapper = {};
+
+let RouteMultiPath = {};
 
 let HashRouter = {};
 
@@ -36,8 +38,9 @@ let A = {};
 export {
   Router,
   Route,
-  RouteEl,
-  RouterRoot,
+  RouteAdvanced,
+  RouteWrapper,
+  RouteMultiPath,
   HashRouter,
   MemoryRouter,
   Link,

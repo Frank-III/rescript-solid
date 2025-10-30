@@ -8,7 +8,7 @@ import * as NotFound from "./NotFound.mjs";
 import * as H from "solid-js/h";
 import * as Router from "@solidjs/router";
 
-function App$Root(props) {
+function rootLayout(props) {
   let isRouting = Router.useIsRouting();
   return <div
     classList={Object.fromEntries([[
@@ -55,35 +55,31 @@ function App$Root(props) {
   </div>;
 }
 
-let Root = {
-  make: App$Root
-};
-
 function App(props) {
-  return <Root.make>
-    <Router.Router>
-      <Router.Route
-        path={"/"}
-        element={<Home.make />}
-      />
-      <Router.Route
-        path={"/user/:name"}
-        element={<User.make />}
-      />
-      <Router.Route
-        path={"/stories/:id?"}
-        element={<Stories.make />}
-      />
-      <Router.Route
-        path={"foo/*any"}
-        element={<Foo.make />}
-      />
-      <Router.Route
-        path={"*404"}
-        element={<NotFound.make />}
-      />
-    </Router.Router>
-  </Root.make>;
+  return <Router.Router
+    root={rootLayout}
+  >
+    <Router.Route
+      path={"/"}
+      component={Home.make}
+    />
+    <Router.Route
+      path={"/user/:name"}
+      component={User.make}
+    />
+    <Router.Route
+      path={"/stories/:id?"}
+      component={Stories.make}
+    />
+    <Router.Route
+      path={"foo/*any"}
+      component={Foo.make}
+    />
+    <Router.Route
+      path={"*404"}
+      component={NotFound.make}
+    />
+  </Router.Router>;
 }
 
 let R;
@@ -98,7 +94,7 @@ export {
   R,
   Home$1 as Home,
   User$1 as User,
-  Root,
+  rootLayout,
   make,
 }
 /* Foo Not a pure module */

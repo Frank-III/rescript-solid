@@ -1,10 +1,22 @@
 {
   "name": "rescript-solid-monorepo",
   "private": true,
-  "packageManager": "pnpm@10.18.0",
+  "packageManager": "bun@1.0.0",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "catalog": {
+    "rescript": "12.0.0-rc.3",
+    "solid-js": "^1.9.9",
+    "@solidjs/router": "^0.15.3",
+    "vite": "^7.1.12",
+    "vite-plugin-solid": "^2.11.10"
+  },
   "scripts": {
     "build": "turbo run build",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "dev": "turbo run dev --parallel"
   },
   "devDependencies": {
     "turbo": "^2.5.8"

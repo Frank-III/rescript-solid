@@ -27,11 +27,11 @@
     "watch": "rescript -w"
   },
   "peerDependencies": {
-    "rescript": ">=12.0.0",
+    "rescript": "12.x",
     "solid-js": ">=1.8.0"
   },
   "devDependencies": {
-    "rescript": "12.0.0-rc.2",
-    "solid-js": "^1.9.9"
+    "rescript": "catalog:",
+    "solid-js": "catalog:"
   }
 }
