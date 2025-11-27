@@ -331,6 +331,322 @@ module OptionalChainingSignals = {
   }
 }
 
+// 🔬 VERIFICATION TESTS: Switch, Show, For, Type Narrowing, Scoping
+
+// ✅ TEST 1: Switch statement inline in JSX
+module SwitchInlineVsExtracted = {
+  @jsx.component
+  let make = () => {
+    let (count, setCount) = createSignal(0)
+
+    // ❌ Extracted switch - computed once
+    let extractedMessage = switch count() {
+    | n if n > 10 => "Very High"
+    | n if n > 5 => "High"
+    | n if n > 0 => "Medium"
+    | _ => "Low"
+    }
+
+    // ✅ Manual accessor - should be reactive
+    let accessorMessage = () =>
+      switch count() {
+      | n if n > 10 => "Very High"
+      | n if n > 5 => "High"
+      | n if n > 0 => "Medium"
+      | _ => "Low"
+      }
+
+    // ✅ Memo - reactive + cached
+    let memoMessage = createMemo(() =>
+      switch count() {
+      | n if n > 10 => "Very High"
+      | n if n > 5 => "High"
+      | n if n > 0 => "Medium"
+      | _ => "Low"
+      }
+    )
+
+    <div>
+      <h3>{string("🔬 Switch Statement Tests")}</h3>
+      <p>{string("Count: ")}{int(count())}</p>
+      <p>{string("Extracted (should freeze): ")}{string(extractedMessage)}</p>
+      <p>{string("Accessor (should update): ")}{string(accessorMessage())}</p>
+      <p>{string("Memo (should update): ")}{string(memoMessage())}</p>
+      <p>
+        {string("Inline (should update): ")}
+        {string(
+          switch count() {
+          | n if n > 10 => "Very High"
+          | n if n > 5 => "High"
+          | n if n > 0 => "Medium"
+          | _ => "Low"
+          },
+        )}
+      </p>
+      <button onClick={_ => setCount(prev => prev + 1)}>{string("Increment")}</button>
+      <button onClick={_ => setCount(_ => 0)}>{string("Reset")}</button>
+    </div>
+  }
+}
+
+// ✅ TEST 2: Show component with type narrowing
+module ShowTypeNarrowingTest = {
+  type user = {name: string, age: option<int>}
+
+  @jsx.component
+  let make = () => {
+    let (user, setUser) = createSignal(None)
+
+    module Show = SolidJSX.Show
+
+    <div>
+      <h3>{string("🔬 Show Component + Type Narrowing")}</h3>
+      <Show when_={user()} fallback_={string("No user")}>
+        {userValue =>
+          switch userValue {
+          | Some(u) =>
+            <div>
+              <p>{string("Name: ")}{string(u.name)}</p>
+              <p>
+                {string("Age: ")}
+                {switch u.age {
+                | Some(age) => int(age)
+                | None => string("Unknown")
+                }}
+              </p>
+            </div>
+          | None => string("Unexpected None")
+          }}
+      </Show>
+      <button
+        onClick={_ => setUser(_ => Some({name: "Alice", age: Some(25)}))}>
+        {string("Set Alice (25)")}
+      </button>
+      <button onClick={_ => setUser(_ => Some({name: "Bob", age: None}))}>
+        {string("Set Bob (no age)")}
+      </button>
+      <button onClick={_ => setUser(_ => None)}>{string("Clear")}</button>
+    </div>
+  }
+}
+
+// ✅ TEST 3: For component reactivity
+module ForComponentTest = {
+  type item = {id: int, name: string, active: bool}
+
+  @jsx.component
+  let make = () => {
+    let (items, setItems) = createSignal([
+      {id: 1, name: "Item 1", active: true},
+      {id: 2, name: "Item 2", active: false},
+      {id: 3, name: "Item 3", active: true},
+    ])
+
+    // ❌ Filtered outside - frozen
+    let frozenFiltered = items()->Array.filter(item => item.active)
+
+    // ✅ Accessor - reactive
+    let accessorFiltered = () => items()->Array.filter(item => item.active)
+
+    // ✅ Memo - reactive + cached
+    let memoFiltered = createMemo(() => items()->Array.filter(item => item.active))
+
+    let toggleItem = (id: int) => {
+      setItems(prev =>
+        prev->Array.map(item =>
+          if item.id === id {
+            {...item, active: !item.active}
+          } else {
+            item
+          }
+        )
+      )
+    }
+
+    module For = SolidJSX.For
+
+    <div>
+      <h3>{string("🔬 For Component Tests")}</h3>
+      <p>{string("Frozen filtered count: ")}{int(Array.length(frozenFiltered))}</p>
+      <p>{string("Accessor filtered count: ")}{int(Array.length(accessorFiltered()))}</p>
+      <p>{string("Memo filtered count: ")}{int(Array.length(memoFiltered()))}</p>
+      <h4>{string("All Items:")}</h4>
+      <For each_={items()}>
+        {(item, _i) =>
+          <div>
+            <input type_="checkbox" checked={item.active} onChange={_ => toggleItem(item.id)} />
+            {string(item.name)}
+          </div>}
+      </For>
+      <h4>{string("Filtered (inline - should update):")}</h4>
+      <For each_={items()->Array.filter(item => item.active)}>
+        {(item, _i) => <div>{string(item.name)}</div>}
+      </For>
+      <h4>{string("Filtered (memo - should update):")}</h4>
+      <For each_={memoFiltered()}>
+        {(item, _i) => <div>{string(item.name)}</div>}
+      </For>
+    </div>
+  }
+}
+
+// ✅ TEST 4: Scoping edge cases
+module ScopingTests = {
+  @jsx.component
+  let make = () => {
+    let (outer, setOuter) = createSignal(0)
+
+    // Test 1: Inner scope signal read
+    let scopeTest1 = {
+      let inner = outer() // ❌ Read in outer scope
+      () => inner * 2 // Returns frozen value * 2
+    }
+
+    // Test 2: Nested accessor
+    let scopeTest2 = () => {
+      let inner = outer() // ✅ Read fresh each time scopeTest2 is called
+      inner * 2
+    }
+
+    // Test 3: Closure in closure
+    let makeMultiplier = (factor: int) => {
+      () => outer() * factor // ✅ Closes over factor, reads outer() fresh
+    }
+
+    let times3 = makeMultiplier(3)
+    let times5 = makeMultiplier(5)
+
+    <div>
+      <h3>{string("🔬 Scoping Tests")}</h3>
+      <p>{string("Outer: ")}{int(outer())}</p>
+      <p>{string("ScopeTest1 (frozen inner): ")}{int(scopeTest1())}</p>
+      <p>{string("ScopeTest2 (fresh read): ")}{int(scopeTest2())}</p>
+      <p>{string("Times 3 (closure): ")}{int(times3())}</p>
+      <p>{string("Times 5 (closure): ")}{int(times5())}</p>
+      <button onClick={_ => setOuter(prev => prev + 1)}>{string("Increment")}</button>
+    </div>
+  }
+}
+
+// ✅ TEST 5: Manual accessor vs memo performance
+module ManualAccessorVsMemo = {
+  let expensiveComputation = (n: int) => {
+    Console.log("Computing expensive for: " ++ Int.toString(n))
+    // Simulate expensive operation
+    n * n * n
+  }
+
+  @jsx.component
+  let make = () => {
+    let (count, setCount) = createSignal(0)
+
+    // ❌ Computed once
+    let frozenExpensive = expensiveComputation(count())
+
+    // ⚠️ Manual accessor - recalculates every time
+    let accessorExpensive = () => expensiveComputation(count())
+
+    // ✅ Memo - caches result
+    let memoExpensive = createMemo(() => expensiveComputation(count()))
+
+    <div>
+      <h3>{string("🔬 Manual Accessor vs Memo")}</h3>
+      <p>{string("Count: ")}{int(count())}</p>
+      <p>{string("Frozen (never updates): ")}{int(frozenExpensive)}</p>
+      <p>
+        {string("Accessor (check console - calls multiple times): ")}
+        {int(accessorExpensive())}
+        {string(" | ")}
+        {int(accessorExpensive())}
+        {string(" (called twice!)")}
+      </p>
+      <p>
+        {string("Memo (cached - only one computation): ")}
+        {int(memoExpensive())}
+        {string(" | ")}
+        {int(memoExpensive())}
+        {string(" (cached!)")}
+      </p>
+      <button onClick={_ => setCount(prev => prev + 1)}>
+        {string("Increment (check console)")}
+      </button>
+    </div>
+  }
+}
+
+// ✅ TEST 6: Type narrowing with pattern matching
+module TypeNarrowingPatternMatch = {
+  type response =
+    | Loading
+    | Success({data: string, count: int})
+    | Error({message: string})
+
+  @jsx.component
+  let make = () => {
+    let (response, setResponse) = createSignal(Loading)
+
+    // ❌ Extracted pattern match
+    let extractedMessage = switch response() {
+    | Loading => "Loading..."
+    | Success({data, count}) => "Success: " ++ data ++ " (" ++ Int.toString(count) ++ ")"
+    | Error({message}) => "Error: " ++ message
+    }
+
+    // ✅ Accessor pattern match
+    let accessorMessage = () =>
+      switch response() {
+      | Loading => "Loading..."
+      | Success({data, count}) => "Success: " ++ data ++ " (" ++ Int.toString(count) ++ ")"
+      | Error({message}) => "Error: " ++ message
+      }
+
+    module Show = SolidJSX.Show
+    module Switch = SolidJSX.Switch
+    module Match = SolidJSX.Match
+
+    <div>
+      <h3>{string("🔬 Type Narrowing + Pattern Match")}</h3>
+      <p>{string("Extracted (frozen): ")}{string(extractedMessage)}</p>
+      <p>{string("Accessor (updates): ")}{string(accessorMessage())}</p>
+      <p>
+        {string("Inline (updates): ")}
+        {string(
+          switch response() {
+          | Loading => "Loading..."
+          | Success({data, count}) => "Success: " ++ data ++ " (" ++ Int.toString(count) ++ ")"
+          | Error({message}) => "Error: " ++ message
+          },
+        )}
+      </p>
+      <h4>{string("Using Show component:")}</h4>
+      <Show
+        when_={switch response() {
+        | Success(_) => true
+        | _ => false
+        }}
+        fallback_={string("Not success")}>
+        {_ =>
+          switch response() {
+          | Success({data, count}) =>
+            <div>
+              {string("Data: " ++ data ++ ", Count: " ++ Int.toString(count))}
+            </div>
+          | _ => null
+          }}
+      </Show>
+      <div>
+        <button onClick={_ => setResponse(_ => Loading)}>{string("Set Loading")}</button>
+        <button onClick={_ => setResponse(_ => Success({data: "Hello", count: 42}))}>
+          {string("Set Success")}
+        </button>
+        <button onClick={_ => setResponse(_ => Error({message: "Oops!"}))}>
+          {string("Set Error")}
+        </button>
+      </div>
+    </div>
+  }
+}
+
 // Main component showcasing all edge cases
 @jsx.component
 let make = () => {
@@ -366,5 +682,18 @@ let make = () => {
     <StringInterpolation />
     <hr />
     <OptionalChainingSignals />
+    <hr />
+    <h2>{string("🔬 VERIFICATION TESTS")}</h2>
+    <SwitchInlineVsExtracted />
+    <hr />
+    <ShowTypeNarrowingTest />
+    <hr />
+    <ForComponentTest />
+    <hr />
+    <ScopingTests />
+    <hr />
+    <ManualAccessorVsMemo />
+    <hr />
+    <TypeNarrowingPatternMatch />
   </div>
 }

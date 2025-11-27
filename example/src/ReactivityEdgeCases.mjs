@@ -445,6 +445,425 @@ let OptionalChainingSignals = {
   make: ReactivityEdgeCases$OptionalChainingSignals
 };
 
+function ReactivityEdgeCases$SwitchInlineVsExtracted(props) {
+  let match = SolidJs.createSignal(0);
+  let setCount = match[1];
+  let count = match[0];
+  let n = count();
+  let extractedMessage = n > 10 ? "Very High" : (
+      n > 5 ? "High" : (
+          n > 0 ? "Medium" : "Low"
+        )
+    );
+  let accessorMessage = () => {
+    let n = count();
+    if (n > 10) {
+      return "Very High";
+    } else if (n > 5) {
+      return "High";
+    } else if (n > 0) {
+      return "Medium";
+    } else {
+      return "Low";
+    }
+  };
+  let memoMessage = SolidJs.createMemo(() => {
+    let n = count();
+    if (n > 10) {
+      return "Very High";
+    } else if (n > 5) {
+      return "High";
+    } else if (n > 0) {
+      return "Medium";
+    } else {
+      return "Low";
+    }
+  });
+  let n$1 = count();
+  return <div>
+    <h3>
+      {"🔬 Switch Statement Tests"}
+    </h3>
+    <p>
+      {"Count: "}
+      {count()}
+    </p>
+    <p>
+      {"Extracted (should freeze): "}
+      {extractedMessage}
+    </p>
+    <p>
+      {"Accessor (should update): "}
+      {accessorMessage()}
+    </p>
+    <p>
+      {"Memo (should update): "}
+      {memoMessage()}
+    </p>
+    <p>
+      {"Inline (should update): "}
+      {n$1 > 10 ? "Very High" : (
+          n$1 > 5 ? "High" : (
+              n$1 > 0 ? "Medium" : "Low"
+            )
+        )}
+    </p>
+    <button
+      onClick={param => setCount(prev => prev + 1 | 0)}
+    >
+      {"Increment"}
+    </button>
+    <button
+      onClick={param => setCount(param => 0)}
+    >
+      {"Reset"}
+    </button>
+  </div>;
+}
+
+let SwitchInlineVsExtracted = {
+  make: ReactivityEdgeCases$SwitchInlineVsExtracted
+};
+
+function ReactivityEdgeCases$ShowTypeNarrowingTest(props) {
+  let match = SolidJs.createSignal(undefined);
+  let setUser = match[1];
+  return <div>
+    <h3>
+      {"🔬 Show Component + Type Narrowing"}
+    </h3>
+    <SolidJs.Show
+      when={match[0]()}
+      fallback={"No user"}
+    >
+      {userValue => {
+        if (userValue === undefined) {
+          return "Unexpected None";
+        }
+        let age = userValue.age;
+        return <div>
+          <p>
+            {"Name: "}
+            {userValue.name}
+          </p>
+          <p>
+            {"Age: "}
+            {age !== undefined ? age : "Unknown"}
+          </p>
+        </div>;
+      }}
+    </SolidJs.Show>
+    <button
+      onClick={param => setUser(param => ({
+        name: "Alice",
+        age: 25
+      }))}
+    >
+      {"Set Alice (25)"}
+    </button>
+    <button
+      onClick={param => setUser(param => ({
+        name: "Bob",
+        age: undefined
+      }))}
+    >
+      {"Set Bob (no age)"}
+    </button>
+    <button
+      onClick={param => setUser(param => {})}
+    >
+      {"Clear"}
+    </button>
+  </div>;
+}
+
+let ShowTypeNarrowingTest = {
+  make: ReactivityEdgeCases$ShowTypeNarrowingTest
+};
+
+function ReactivityEdgeCases$ForComponentTest(props) {
+  let match = SolidJs.createSignal([
+    {
+      id: 1,
+      name: "Item 1",
+      active: true
+    },
+    {
+      id: 2,
+      name: "Item 2",
+      active: false
+    },
+    {
+      id: 3,
+      name: "Item 3",
+      active: true
+    }
+  ]);
+  let setItems = match[1];
+  let items = match[0];
+  let frozenFiltered = items().filter(item => item.active);
+  let accessorFiltered = () => items().filter(item => item.active);
+  let memoFiltered = SolidJs.createMemo(() => items().filter(item => item.active));
+  return <div>
+    <h3>
+      {"🔬 For Component Tests"}
+    </h3>
+    <p>
+      {"Frozen filtered count: "}
+      {frozenFiltered.length}
+    </p>
+    <p>
+      {"Accessor filtered count: "}
+      {accessorFiltered().length}
+    </p>
+    <p>
+      {"Memo filtered count: "}
+      {memoFiltered().length}
+    </p>
+    <h4>
+      {"All Items:"}
+    </h4>
+    <SolidJs.For
+      each={items()}
+    >
+      {(item, _i) => <div>
+        <input
+          checked={item.active}
+          type={"checkbox"}
+          onChange={param => {
+            let id = item.id;
+            setItems(prev => prev.map(item => {
+              if (item.id === id) {
+                return {
+                  id: item.id,
+                  name: item.name,
+                  active: !item.active
+                };
+              } else {
+                return item;
+              }
+            }));
+          }}
+        />
+        {item.name}
+      </div>}
+    </SolidJs.For>
+    <h4>
+      {"Filtered (inline - should update):"}
+    </h4>
+    <SolidJs.For
+      each={items().filter(item => item.active)}
+    >
+      {(item, _i) => <div>
+        {item.name}
+      </div>}
+    </SolidJs.For>
+    <h4>
+      {"Filtered (memo - should update):"}
+    </h4>
+    <SolidJs.For
+      each={memoFiltered()}
+    >
+      {(item, _i) => <div>
+        {item.name}
+      </div>}
+    </SolidJs.For>
+  </div>;
+}
+
+let ForComponentTest = {
+  make: ReactivityEdgeCases$ForComponentTest
+};
+
+function ReactivityEdgeCases$ScopingTests(props) {
+  let match = SolidJs.createSignal(0);
+  let setOuter = match[1];
+  let outer = match[0];
+  let inner = outer();
+  let scopeTest2 = () => {
+    let inner = outer();
+    return (inner << 1);
+  };
+  let times3 = () => outer() * 3 | 0;
+  let times5 = () => outer() * 5 | 0;
+  return <div>
+    <h3>
+      {"🔬 Scoping Tests"}
+    </h3>
+    <p>
+      {"Outer: "}
+      {outer()}
+    </p>
+    <p>
+      {"ScopeTest1 (frozen inner): "}
+      {(inner << 1)}
+    </p>
+    <p>
+      {"ScopeTest2 (fresh read): "}
+      {scopeTest2()}
+    </p>
+    <p>
+      {"Times 3 (closure): "}
+      {times3()}
+    </p>
+    <p>
+      {"Times 5 (closure): "}
+      {times5()}
+    </p>
+    <button
+      onClick={param => setOuter(prev => prev + 1 | 0)}
+    >
+      {"Increment"}
+    </button>
+  </div>;
+}
+
+let ScopingTests = {
+  make: ReactivityEdgeCases$ScopingTests
+};
+
+function expensiveComputation(n) {
+  console.log("Computing expensive for: " + n.toString());
+  return (n * n | 0) * n | 0;
+}
+
+function ReactivityEdgeCases$ManualAccessorVsMemo(props) {
+  let match = SolidJs.createSignal(0);
+  let setCount = match[1];
+  let count = match[0];
+  let frozenExpensive = expensiveComputation(count());
+  let memoExpensive = SolidJs.createMemo(() => expensiveComputation(count()));
+  return <div>
+    <h3>
+      {"🔬 Manual Accessor vs Memo"}
+    </h3>
+    <p>
+      {"Count: "}
+      {count()}
+    </p>
+    <p>
+      {"Frozen (never updates): "}
+      {frozenExpensive}
+    </p>
+    <p>
+      {"Accessor (check console - calls multiple times): "}
+      {expensiveComputation(count())}
+      {" | "}
+      {expensiveComputation(count())}
+      {" (called twice!)"}
+    </p>
+    <p>
+      {"Memo (cached - only one computation): "}
+      {memoExpensive()}
+      {" | "}
+      {memoExpensive()}
+      {" (cached!)"}
+    </p>
+    <button
+      onClick={param => setCount(prev => prev + 1 | 0)}
+    >
+      {"Increment (check console)"}
+    </button>
+  </div>;
+}
+
+let ManualAccessorVsMemo = {
+  expensiveComputation: expensiveComputation,
+  make: ReactivityEdgeCases$ManualAccessorVsMemo
+};
+
+function ReactivityEdgeCases$TypeNarrowingPatternMatch(props) {
+  let match = SolidJs.createSignal("Loading");
+  let setResponse = match[1];
+  let response = match[0];
+  let match$1 = response();
+  let extractedMessage;
+  extractedMessage = typeof match$1 !== "object" ? "Loading..." : (
+      match$1.TAG === "Success" ? "Success: " + match$1.data + " (" + match$1.count.toString() + ")" : "Error: " + match$1.message
+    );
+  let accessorMessage = () => {
+    let match = response();
+    if (typeof match !== "object") {
+      return "Loading...";
+    } else if (match.TAG === "Success") {
+      return "Success: " + match.data + " (" + match.count.toString() + ")";
+    } else {
+      return "Error: " + match.message;
+    }
+  };
+  let match$2 = response();
+  let tmp;
+  tmp = typeof match$2 !== "object" ? "Loading..." : (
+      match$2.TAG === "Success" ? "Success: " + match$2.data + " (" + match$2.count.toString() + ")" : "Error: " + match$2.message
+    );
+  let match$3 = response();
+  let tmp$1;
+  tmp$1 = typeof match$3 !== "object" ? false : match$3.TAG === "Success";
+  return <div>
+    <h3>
+      {"🔬 Type Narrowing + Pattern Match"}
+    </h3>
+    <p>
+      {"Extracted (frozen): "}
+      {extractedMessage}
+    </p>
+    <p>
+      {"Accessor (updates): "}
+      {accessorMessage()}
+    </p>
+    <p>
+      {"Inline (updates): "}
+      {tmp}
+    </p>
+    <h4>
+      {"Using Show component:"}
+    </h4>
+    <SolidJs.Show
+      when={tmp$1}
+      fallback={"Not success"}
+    >
+      {param => {
+        let match = response();
+        if (typeof match !== "object" || match.TAG !== "Success") {
+          return null;
+        } else {
+          return <div>
+            {"Data: " + match.data + ", Count: " + match.count.toString()}
+          </div>;
+        }
+      }}
+    </SolidJs.Show>
+    <div>
+      <button
+        onClick={param => setResponse(param => "Loading")}
+      >
+        {"Set Loading"}
+      </button>
+      <button
+        onClick={param => setResponse(param => ({
+          TAG: "Success",
+          data: "Hello",
+          count: 42
+        }))}
+      >
+        {"Set Success"}
+      </button>
+      <button
+        onClick={param => setResponse(param => ({
+          TAG: "Error",
+          message: "Oops!"
+        }))}
+      >
+        {"Set Error"}
+      </button>
+    </div>
+  </div>;
+}
+
+let TypeNarrowingPatternMatch = {
+  make: ReactivityEdgeCases$TypeNarrowingPatternMatch
+};
+
 function ReactivityEdgeCases(props) {
   return <div>
     <h1>
@@ -482,6 +901,21 @@ function ReactivityEdgeCases(props) {
     <StringInterpolation.make />
     <hr />
     <OptionalChainingSignals.make />
+    <hr />
+    <h2>
+      {"🔬 VERIFICATION TESTS"}
+    </h2>
+    <SwitchInlineVsExtracted.make />
+    <hr />
+    <ShowTypeNarrowingTest.make />
+    <hr />
+    <ForComponentTest.make />
+    <hr />
+    <ScopingTests.make />
+    <hr />
+    <ReactivityEdgeCases$ManualAccessorVsMemo />
+    <hr />
+    <TypeNarrowingPatternMatch.make />
   </div>;
 }
 
@@ -500,6 +934,12 @@ export {
   MultipleSignalReads,
   StringInterpolation,
   OptionalChainingSignals,
+  SwitchInlineVsExtracted,
+  ShowTypeNarrowingTest,
+  ForComponentTest,
+  ScopingTests,
+  ManualAccessorVsMemo,
+  TypeNarrowingPatternMatch,
   make,
 }
 /* solid-js Not a pure module */
