@@ -165,7 +165,7 @@ module ObjectCreationWithSignals = {
   @jsx.component
   let make = () => {
     let (firstName, setFirstName) = createSignal("John")
-    let (lastName, setLastName) = createSignal("Doe")
+    let (lastName, _setLastName) = createSignal("Doe")
 
     // Creating object with signal values - captured once?
     let person = {
