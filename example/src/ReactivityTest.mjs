@@ -138,6 +138,53 @@ let BrokenEager = {
   make: ReactivityTest$BrokenEager
 };
 
+function ReactivityTest$FixedLazy(props) {
+  let match = SolidJs.createSignal(0);
+  let setCount = match[1];
+  let count = match[0];
+  let lazyDoubled = () => (count() << 1);
+  return <Section.make
+    title={"3b. FIXED: Lazy Evaluation (SHOULD work)"}
+  >
+    <p>
+      {"Reactive count: "}
+      <strong>
+        {count()}
+      </strong>
+    </p>
+    <p
+      className={"fixed"}
+    >
+      {"Lazy doubled: "}
+      <strong>
+        {() => (count() << 1)}
+      </strong>
+    </p>
+    <p
+      className={"fixed"}
+    >
+      {"Via variable: "}
+      <strong>
+        {lazyDoubled}
+      </strong>
+    </p>
+    <button
+      onClick={param => setCount(prev => prev + 1 | 0)}
+    >
+      {"Increment"}
+    </button>
+    <p
+      className={"note"}
+    >
+      {"lazyInt(() => expr) defers evaluation - Solid tracks it reactively"}
+    </p>
+  </Section.make>;
+}
+
+let FixedLazy = {
+  make: ReactivityTest$FixedLazy
+};
+
 function ReactivityTest$ConditionalShow(props) {
   let match = SolidJs.createSignal(true);
   let setVisible = match[1];
@@ -374,6 +421,7 @@ function ReactivityTest(props) {
     <BasicSignal.make />
     <DerivedMemo.make />
     <BrokenEager.make />
+    <FixedLazy.make />
     <ConditionalShow.make />
     <ListFor.make />
     <EffectTracking.make />
@@ -389,6 +437,7 @@ export {
   BasicSignal,
   DerivedMemo,
   BrokenEager,
+  FixedLazy,
   ConditionalShow,
   ListFor,
   EffectTracking,

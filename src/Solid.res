@@ -137,10 +137,20 @@ external splitProps: ('props, array<string>) => ('a, 'b) = "splitProps"
 @module("solid-js")
 external \"DEV": {..} = "DEV"
 
-// Helper functions for element creation
+// Helper functions for element creation (eager)
 external array: array<element> => element = "%identity"
 @val external null: element = "null"
 external float: float => element = "%identity"
 external int: int => element = "%identity"
 external string: string => element = "%identity"
 external promise: promise<element> => element = "%identity"
+
+// Lazy/deferred helpers for reactive content
+// In Solid, {() => value} creates reactive text that re-renders when signals change
+// These tell ReScript that a function returning X is a valid element
+external lazy: (unit => element) => element = "%identity"
+external lazyString: (unit => string) => element = "%identity"
+external lazyInt: (unit => int) => element = "%identity"
+external lazyFloat: (unit => float) => element = "%identity"
+external lazyArray: (unit => array<element>) => element = "%identity"
+external lazyOption: (unit => option<element>) => element = "%identity"

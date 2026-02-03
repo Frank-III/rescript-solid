@@ -86,6 +86,32 @@ module BrokenEager = {
 }
 
 // ============================================
+// TEST 3b: FIXED with lazy - Deferred evaluation
+// ============================================
+module FixedLazy = {
+  @jsx.component
+  let make = () => {
+    let (count, setCount) = createSignal(0)
+
+    // FIX: Use lazy* helpers to defer signal reads
+    // These compile to () => expr which Solid treats as reactive
+    let lazyDoubled = () => count() * 2
+
+    <Section title="3b. FIXED: Lazy Evaluation (SHOULD work)">
+      <p>{string("Reactive count: ")}<strong>{int(count())}</strong></p>
+      <p className="fixed">{string("Lazy doubled: ")}<strong>{lazyInt(() => count() * 2)}</strong></p>
+      <p className="fixed">{string("Via variable: ")}<strong>{lazyInt(lazyDoubled)}</strong></p>
+      <button onClick={_ => setCount(prev => prev + 1)}>
+        {string("Increment")}
+      </button>
+      <p className="note">
+        {string("lazyInt(() => expr) defers evaluation - Solid tracks it reactively")}
+      </p>
+    </Section>
+  }
+}
+
+// ============================================
 // TEST 4: Conditional rendering with Show
 // ============================================
 module ConditionalShow = {
@@ -245,6 +271,7 @@ let make = () => {
     <BasicSignal />
     <DerivedMemo />
     <BrokenEager />
+    <FixedLazy />
     <ConditionalShow />
     <ListFor />
     <EffectTracking />
