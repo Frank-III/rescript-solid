@@ -16,11 +16,14 @@ external jsxs: (component<'props>, 'props) => element = "jsxs"
 @module("solid-js/h")
 external jsxKeyed: (component<'props>, 'props, ~key: string=?, @ignore unit) => element = "jsx"
 
-// Fragment: provide a value for typing; prefer preserve <> shorthand in output
+@module("solid-js/h")
+external jsxsKeyed: (component<'props>, 'props, ~key: string=?, @ignore unit) => element = "jsxs"
+
+// Fragment support - bind to Solid's Fragment for proper JSX preserve mode
 type fragmentProps = {children?: element}
-let jsxFragment: component<fragmentProps> = props => {
-  props.children->Option.getOr(Jsx.null)
-}
+
+@module("solid-js")
+external jsxFragment: component<fragmentProps> = "Fragment"
 
 // Elements module for lowercase JSX elements
 module Elements = {
@@ -140,3 +143,4 @@ external array: array<element> => element = "%identity"
 external float: float => element = "%identity"
 external int: int => element = "%identity"
 external string: string => element = "%identity"
+external promise: promise<element> => element = "%identity"

@@ -28,11 +28,11 @@
     "README.md"
   ],
   "peerDependencies": {
-    "rescript": ">=12.0.0",
+    "rescript": ">=12.2.0",
     "solid-js": ">=1.8.0"
   },
   "devDependencies": {
-    "rescript": "12.0.0-rc.2",
+    "rescript": "12.2.0-rc.1",
     "solid-js": "^1.9.0"
   }
 }

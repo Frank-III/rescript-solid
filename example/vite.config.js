@@ -10,16 +10,14 @@ export default defineConfig({
     })
   ],
   esbuild: {
-    // Transform .mjs files as JSX
-    loader: 'jsx',
-    include: /\.mjs$/,
-    exclude: []
+    include: /src\/.*\.mjs$/,
+    loader: 'jsx'
   },
   optimizeDeps: {
-    include: ['solid-js', 'solid-js/web'],
-    exclude: ['@rescript/solid'],
+    // Exclude our source files from pre-bundling so vite-plugin-solid processes them
+    entries: [],
+    include: ['solid-js', 'solid-js/web', 'solid-js/h'],
     esbuildOptions: {
-      // Ensure .mjs files are treated as JSX
       loader: {
         '.mjs': 'jsx'
       }
