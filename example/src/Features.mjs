@@ -4,9 +4,9 @@ import * as Document from "./Document.mjs";
 import * as SolidJs from "solid-js";
 import * as H from "solid-js/h";
 import * as Web from "solid-js/web";
-import * as Stdlib_Option from "@rescript/runtime/lib/es6/Stdlib_Option.js";
-import * as Stdlib_JsError from "@rescript/runtime/lib/es6/Stdlib_JsError.js";
-import * as Primitive_option from "@rescript/runtime/lib/es6/Primitive_option.js";
+import * as Stdlib_Option from "@rescript/runtime/lib/es6/Stdlib_Option.mjs";
+import * as Stdlib_JsError from "@rescript/runtime/lib/es6/Stdlib_JsError.mjs";
+import * as Primitive_option from "@rescript/runtime/lib/es6/Primitive_option.mjs";
 
 function Features$Thrower(props) {
   if (props.shouldThrow) {
