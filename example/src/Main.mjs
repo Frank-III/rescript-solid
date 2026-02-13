@@ -4,7 +4,7 @@ import * as App from "./App.mjs";
 import * as Document from "./Document.mjs";
 import * as H from "solid-js/h";
 import * as Web from "solid-js/web";
-import * as Primitive_option from "@rescript/runtime/lib/es6/Primitive_option.js";
+import * as Primitive_option from "@rescript/runtime/lib/es6/Primitive_option.mjs";
 
 let root = Document.getElementById("app");
 
