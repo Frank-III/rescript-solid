@@ -1,5 +1,7 @@
 open Solid
 module R = SolidRouter
+module Switch = SolidJSX.Switch
+module Match = SolidJSX.Match
 
 // Example demonstrating nested routes
 module UsersLayout = {
@@ -39,11 +41,11 @@ module UserDetail = {
   @jsx.component
   let make = () => {
     let params = R.useParams()
-    let userId = params->Dict.get("id")->Option.getOr("unknown")
+    let userId = createMemo(() => params->Dict.get("id")->Option.getOr("unknown"))
     
     <div>
       <h3>{string("User Detail")}</h3>
-      <p>{string("User ID: " ++ userId)}</p>
+      <p>{string("User ID: " ++ userId())}</p>
     </div>
   }
 }
@@ -80,35 +82,40 @@ module LoginRegister = {
   @jsx.component
   let make = () => {
     let location = R.useLocation()
-    let isLogin = location.pathname == "/login"
+    let isLogin = createMemo(() => location.pathname == "/login")
     
     <div>
-      <h2>{string(isLogin ? "Login" : "Register")}</h2>
-      <form>
-        <input type_="text" placeholder="Username" />
-        <input type_="password" placeholder="Password" />
-        {if !isLogin {
-          <input type_="password" placeholder="Confirm Password" />
-        } else {
-          <></>
-        }}
-        <button type_="submit">
-          {string(isLogin ? "Login" : "Register")}
-        </button>
-      </form>
-      <p>
-        {if isLogin {
+      <Switch.make>
+        <Match.make when_={isLogin()}>
           <>
-            {string("Don't have an account? ")}
-            <R.Link href_="/register">{string("Register")}</R.Link>
+            <h2>{string("Login")}</h2>
+            <form>
+              <input type_="text" placeholder="Username" />
+              <input type_="password" placeholder="Password" />
+              <button type_="submit">{string("Login")}</button>
+            </form>
+            <p>
+              {string("Don't have an account? ")}
+              <R.Link href_="/register">{string("Register")}</R.Link>
+            </p>
           </>
-        } else {
+        </Match.make>
+        <Match.make when_={!isLogin()}>
           <>
-            {string("Already have an account? ")}
-            <R.Link href_="/login">{string("Login")}</R.Link>
+            <h2>{string("Register")}</h2>
+            <form>
+              <input type_="text" placeholder="Username" />
+              <input type_="password" placeholder="Password" />
+              <input type_="password" placeholder="Confirm Password" />
+              <button type_="submit">{string("Register")}</button>
+            </form>
+            <p>
+              {string("Already have an account? ")}
+              <R.Link href_="/login">{string("Login")}</R.Link>
+            </p>
           </>
-        }}
-      </p>
+        </Match.make>
+      </Switch.make>
     </div>
   }
 }

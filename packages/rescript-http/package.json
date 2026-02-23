@@ -1,0 +1,11 @@
+{
+  "name": "rescript-http",
+  "version": "0.1.0",
+  "main": "src/Http.res.mjs",
+  "module": "src/Http.res.mjs",
+  "types": "src/Http.res.d.ts",
+  "license": "MIT",
+  "peerDependencies": {
+    "rescript": ">=12.0.0"
+  }
+}

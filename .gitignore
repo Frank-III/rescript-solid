@@ -10,3 +10,4 @@ lib/ocaml/
 .vite/
 *.log
 .turbo/
+packages/rescript-show-ppx-native/_build/

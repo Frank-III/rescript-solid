@@ -1,0 +1,4 @@
+(executable
+ (name show_ppx_native)
+ (public_name rescript-show-ppx-native)
+ (libraries ppxlib))

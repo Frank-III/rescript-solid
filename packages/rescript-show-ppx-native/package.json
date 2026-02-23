@@ -1,0 +1,9 @@
+{
+  "name": "rescript-show-ppx-native",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "opam exec -- dune build --root .",
+    "clean": "opam exec -- dune clean"
+  }
+}

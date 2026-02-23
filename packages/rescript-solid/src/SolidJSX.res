@@ -13,6 +13,25 @@ module Show = {
   external make: Jsx.component<props<'a>> = "Show"
 }
 
+module ShowOption = {
+  @jsx.component
+  let make = (~when_: option<'a>, ~fallback: element=?, ~children, ()) => {
+    <Show.make when_={when_} fallback_={fallback->Option.getOr(Jsx.null)}>
+      {opt =>
+        switch opt {
+        | Some(value) => children(value)
+        | None => Jsx.null
+        }
+      }
+    </Show.make>
+  }
+}
+
+let ppxDefer = (children: unit => element) => {
+  let memo = createMemo(children)
+  memo()
+}
+
 module For = {
   type props<'a> = {
     @as("each") each_: array<'a>,

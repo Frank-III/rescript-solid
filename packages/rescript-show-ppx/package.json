@@ -1,0 +1,12 @@
+{
+  "name": "rescript-show-ppx",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "rescript-show-ppx": "bin/show-ppx.mjs"
+  },
+  "files": [
+    "bin"
+  ]
+}

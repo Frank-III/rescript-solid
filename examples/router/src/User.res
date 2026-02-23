@@ -7,8 +7,8 @@ module TypedParams = R.MakeParams(P)
 @jsx.component
 let make = () => {
   let params = TypedParams.useParams()
-  let name = params["name"]
+  let name = createMemo(() => params["name"])
   <div>
-    <h2>{string("User: ")}{string(name)}</h2>
+    <h2>{string("User: ")}{string(name())}</h2>
   </div>
 }
