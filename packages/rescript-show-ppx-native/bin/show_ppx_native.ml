@@ -13,6 +13,11 @@ let enable_defer_rewrite =
   | Some ("1" | "true" | "TRUE" | "yes" | "on") -> true
   | _ -> false
 
+let enable_defer_jsx_rewrite =
+  match Sys.getenv_opt "RESCRIPT_SHOW_PPX_NATIVE_DEFER_JSX" with
+  | Some ("1" | "true" | "TRUE" | "yes" | "on") -> true
+  | _ -> false
+
 let lident ~loc txt =
   { loc; txt = Longident.parse txt }
 
@@ -109,7 +114,10 @@ class mapper =
       let attrs = expr.pexp_attributes in
       if has_attr "defer" attrs then (
         let pass_through = remove_defer_attr expr in
-        if enable_defer_rewrite && not (expr_contains_jsx pass_through) then
+        if
+          enable_defer_rewrite
+          && (enable_defer_jsx_rewrite || not (expr_contains_jsx pass_through))
+        then
           pass_through |> normalize_defer_for_rewrite |> rewrite_defer
         else pass_through)
       else if has_attr "show" attrs then
