@@ -1,0 +1,14 @@
+{
+  "name": "solid-examples-defer-repro",
+  "sources": { "dir": "src", "subdirs": true },
+  "package-specs": { "module": "esmodule", "in-source": true },
+  "jsx": { "version": 4, "module": "Solid", "preserve": true },
+  "ppx-flags": [
+    [
+      "../../packages/rescript-show-ppx-native/_build/default/bin/show_ppx_native.exe",
+      "--as-ppx"
+    ]
+  ],
+  "suffix": ".mjs",
+  "dependencies": ["rescript-solid"]
+}

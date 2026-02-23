@@ -1,0 +1,15 @@
+{
+  "name": "solid-examples-defer-repro",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "ppx:native:build": "opam exec -- dune build --root ../../packages/rescript-show-ppx-native",
+    "res:build": "bun run ppx:native:build && rescript",
+    "res:clean": "rescript clean"
+  },
+  "dependencies": {
+    "rescript": "catalog:",
+    "rescript-solid": "workspace:*",
+    "solid-js": "catalog:"
+  }
+}
