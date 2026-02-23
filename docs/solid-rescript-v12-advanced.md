@@ -164,8 +164,20 @@ Current v2 scope:
 
 ### `@defer` scoped block
 
-`@defer` lets you write an inline scoped block that compiles to an IIFE-style
-expression.
+`@defer` is currently experimental in native PPX mode. For reliable behavior,
+use explicit helper form:
+
+```rescript
+{SolidJSX.ppxDefer(() =>
+  <p>{string("Deferred count: " ++ count()->Int.toString)}</p>
+)}
+```
+
+Native investigation command:
+
+```bash
+bun run -F rescript-show-ppx-native investigate:defer
+```
 
 Input:
 

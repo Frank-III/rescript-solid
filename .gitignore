@@ -11,3 +11,4 @@ lib/ocaml/
 *.log
 .turbo/
 packages/rescript-show-ppx-native/_build/
+packages/rescript-show-ppx-native/fixtures/*.ast

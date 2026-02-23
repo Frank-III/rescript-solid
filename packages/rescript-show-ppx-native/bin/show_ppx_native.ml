@@ -1,10 +1,69 @@
 open Ppxlib
 
+open Ast_builder.Default
+
 let has_attr name attrs =
   List.exists (fun (attr : attribute) -> String.equal attr.attr_name.txt name) attrs
 
 let remove_attr name attrs =
   List.filter (fun (attr : attribute) -> not (String.equal attr.attr_name.txt name)) attrs
+
+let enable_defer_rewrite =
+  match Sys.getenv_opt "RESCRIPT_SHOW_PPX_NATIVE_DEFER" with
+  | Some ("1" | "true" | "TRUE" | "yes" | "on") -> true
+  | _ -> false
+
+let lident ~loc txt =
+  { loc; txt = Longident.parse txt }
+
+let unit_pat ~loc = ppat_construct ~loc (lident ~loc "()") None
+
+let rewrite_defer expr =
+  let loc = expr.pexp_loc in
+  let thunk = pexp_fun ~loc Nolabel None (unit_pat ~loc) expr in
+  let call = pexp_ident ~loc (lident ~loc "SolidJSX.ppxDefer") in
+  pexp_apply ~loc call [ (Nolabel, thunk) ]
+
+let remove_defer_attr expr =
+  {
+    expr with
+    pexp_attributes = remove_attr "defer" expr.pexp_attributes;
+  }
+
+let normalize_defer_for_rewrite expr =
+  {
+    expr with
+    pexp_attributes = expr.pexp_attributes |> remove_attr "defer" |> remove_attr "res.braces";
+  }
+
+let rec is_jsx_ident = function
+  | Longident.Lident txt ->
+    String.equal txt "jsx"
+    || String.equal txt "jsxs"
+    || String.ends_with ~suffix:".jsx" txt
+    || String.ends_with ~suffix:".jsxs" txt
+  | Longident.Ldot (_, ("jsx" | "jsxs")) -> true
+  | Longident.Ldot (prefix, _) -> is_jsx_ident prefix
+  | _ -> false
+
+let is_jsx_expr expr =
+  match expr.pexp_desc with
+  | Pexp_apply ({ pexp_desc = Pexp_ident { txt; _ }; _ }, _) -> is_jsx_ident txt
+  | _ -> false
+
+let expr_contains_jsx expr =
+  let found = ref false in
+  let visitor =
+    object
+      inherit Ast_traverse.iter as super
+
+      method! expression expr =
+        if has_attr "JSX" expr.pexp_attributes || is_jsx_expr expr then found := true;
+        if not !found then super#expression expr
+    end
+  in
+  visitor#expression expr;
+  !found
 
 let is_some_pattern pattern =
   match pattern.ppat_desc with
@@ -48,8 +107,11 @@ class mapper =
     method! expression expr =
       let expr = super#expression expr in
       let attrs = expr.pexp_attributes in
-      if has_attr "defer" attrs then
-        expr
+      if has_attr "defer" attrs then (
+        let pass_through = remove_defer_attr expr in
+        if enable_defer_rewrite && not (expr_contains_jsx pass_through) then
+          pass_through |> normalize_defer_for_rewrite |> rewrite_defer
+        else pass_through)
       else if has_attr "show" attrs then
         let expr = { expr with pexp_attributes = remove_attr "show" attrs } in
         rewrite_show expr

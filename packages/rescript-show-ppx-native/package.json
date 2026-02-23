@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "opam exec -- dune build --root .",
-    "clean": "opam exec -- dune clean"
+    "clean": "opam exec -- dune clean",
+    "investigate:defer": "bun scripts/investigate-defer.mjs"
   }
 }
