@@ -7,7 +7,7 @@
     "examples/*"
   ],
   "catalog": {
-    "rescript": "12.0.0-rc.3",
+    "rescript": "12.2.0-rc.1",
     "solid-js": "^1.9.9",
     "@solidjs/router": "^0.15.3",
     "vite": "^7.1.12",
@@ -16,7 +16,9 @@
   "scripts": {
     "build": "turbo run build",
     "clean": "turbo run clean",
-    "dev": "turbo run dev --parallel"
+    "dev": "turbo run dev --parallel",
+    "audit:reactivity": "bun scripts/reactivity-audit.mjs",
+    "ppx:native:build": "opam exec -- dune build --root packages/rescript-show-ppx-native"
   },
   "devDependencies": {
     "turbo": "^2.5.8"

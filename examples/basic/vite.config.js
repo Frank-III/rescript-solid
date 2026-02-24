@@ -1,6 +1,12 @@
 import { defineConfig } from "vite";
 import solidPlugin from "vite-plugin-solid";
 import path from "path";
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
+const rescriptRuntimeDir = path.dirname(
+  require.resolve("@rescript/runtime/package.json"),
+);
 
 export default defineConfig({
   plugins: [
@@ -28,7 +34,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@rescript/runtime": path.resolve(__dirname, "../../node_modules/.bun/@rescript+runtime@12.0.0-rc.2/node_modules/@rescript/runtime")
+      "@rescript/runtime": rescriptRuntimeDir,
     }
   },
   server: {

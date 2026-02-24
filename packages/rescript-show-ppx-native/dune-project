@@ -1,0 +1,14 @@
+(lang dune 3.13)
+
+(name rescript-show-ppx-native)
+
+(generate_opam_files true)
+
+(package
+ (name rescript-show-ppx-native)
+ (synopsis "Native OCaml PPX for ReScript Solid directives")
+ (description "ReScript Solid directive transforms (@show/@defer) implemented as an OCaml PPX")
+ (depends
+  dune
+  ocaml
+  ppxlib))

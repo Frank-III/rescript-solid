@@ -6,7 +6,9 @@ import * as User from "./User.mjs";
 import * as Stories from "./Stories.mjs";
 import * as NotFound from "./NotFound.mjs";
 import * as H from "solid-js/h";
+import * as BindingsAudit from "./BindingsAudit.mjs";
 import * as Router from "@solidjs/router";
+import * as ComplexReactivity from "./ComplexReactivity.mjs";
 
 function rootLayout(props) {
   let isRouting = Router.useIsRouting();
@@ -41,6 +43,16 @@ function rootLayout(props) {
         {"Stories 123"}
       </Router.A>
       <Router.A
+        href={"/complex"}
+      >
+        {"Complex Reactivity"}
+      </Router.A>
+      <Router.A
+        href={"/bindings"}
+      >
+        {"Bindings Audit"}
+      </Router.A>
+      <Router.A
         href={"/foo/a/b"}
       >
         {"Foo */*"}
@@ -72,6 +84,14 @@ function App(props) {
       component={Stories.make}
     />
     <Router.Route
+      path={"/complex"}
+      component={ComplexReactivity.make}
+    />
+    <Router.Route
+      path={"/bindings"}
+      component={BindingsAudit.make}
+    />
+    <Router.Route
       path={"foo/*any"}
       component={Foo.make}
     />
@@ -88,12 +108,18 @@ let Home$1;
 
 let User$1;
 
+let ComplexReactivity$1;
+
+let BindingsAudit$1;
+
 let make = App;
 
 export {
   R,
   Home$1 as Home,
   User$1 as User,
+  ComplexReactivity$1 as ComplexReactivity,
+  BindingsAudit$1 as BindingsAudit,
   rootLayout,
   make,
 }
