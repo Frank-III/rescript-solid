@@ -79,6 +79,11 @@ type sessionQuery = {
   limit: option<int>,
 }
 
+type modelOption = {
+  id: string,
+  label: string,
+}
+
 let decodeMaybeString = (value: option<JSON.t>): option<string> =>
   switch value {
   | Some(JSON.String(text)) => Some(text)
@@ -303,6 +308,60 @@ let decodeSessionStatusArray = (value: JSON.t): array<sessionStatusItem> =>
   | _ => []
   }
 
+let decodeProviderModelEntries = (
+  ~providerName: string,
+  value: JSON.t,
+): array<modelOption> =>
+  switch value {
+  | JSON.Object(dict{"models": JSON.Object(models)}) =>
+    models
+    ->Dict.toArray
+    ->Array.reduce([], (acc, item) => {
+      let (displayLabel, rawModel) = item
+      let modelId =
+        switch rawModel {
+        | JSON.Object(modelEntry) =>
+          switch Dict.get(modelEntry, "id") {
+          | Some(JSON.String(id)) => id
+          | _ => displayLabel
+          }
+        | _ => displayLabel
+        }
+      let id = modelId->String.trim
+      if id == "" {
+        acc
+      } else {
+        let label = `${displayLabel} (${providerName})`
+        acc->Array.concat([{id, label}])
+      }
+    })
+  | _ => []
+  }
+
+let decodeConfigModelOptions = (value: JSON.t): array<modelOption> => {
+  let options =
+    switch value {
+    | JSON.Object(dict{"provider": JSON.Object(providers)}) =>
+      providers
+      ->Dict.toArray
+      ->Array.reduce([], (acc, item) => {
+        let (providerName, providerValue) = item
+        let providerOptions = decodeProviderModelEntries(~providerName, providerValue)
+        acc->Array.concat(providerOptions)
+      })
+    | _ => []
+    }
+
+  options->Array.reduce([], (acc, optionItem) => {
+    let exists = acc->Array.some(existing => existing.id == optionItem.id)
+    if exists {
+      acc
+    } else {
+      acc->Array.concat([optionItem])
+    }
+  })
+}
+
 let normalizedQueryValue = (value: option<string>): option<string> =>
   switch value {
   | Some(text) =>
@@ -470,6 +529,13 @@ let sessionStatuses = async (client: t, ~query: option<sessionQuery>=?, ()) => {
   switch await OpencodeHttp.getJson(client.http, ~path, ()) {
   | Error(error) => Error(error)
   | Ok(payload) => Ok(decodeSessionStatusArray(payload))
+  }
+}
+
+let configModels = async (client: t) => {
+  switch await OpencodeHttp.getJson(client.http, ~path="/config", ()) {
+  | Error(error) => Error(error)
+  | Ok(payload) => Ok(decodeConfigModelOptions(payload))
   }
 }
 

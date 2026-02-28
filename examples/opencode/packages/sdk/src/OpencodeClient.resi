@@ -46,6 +46,11 @@ type sessionQuery = {
   limit: option<int>,
 }
 
+type modelOption = {
+  id: string,
+  label: string,
+}
+
 let make: (
   ~serverUrl: string,
   ~authToken: string=?,
@@ -72,6 +77,7 @@ let projects: t => promise<result<array<project>, OpencodeHttp.error>>
 let sessionById: (t, ~sessionId: string) => promise<result<option<sessionSummary>, OpencodeHttp.error>>
 let sessionMessages: (t, ~sessionId: string) => promise<result<array<sessionMessage>, OpencodeHttp.error>>
 let sessionStatuses: (t, ~query: sessionQuery=?, unit) => promise<result<array<sessionStatusItem>, OpencodeHttp.error>>
+let configModels: t => promise<result<array<modelOption>, OpencodeHttp.error>>
 let sendSessionTextMessage: (
   t,
   ~sessionId: string,

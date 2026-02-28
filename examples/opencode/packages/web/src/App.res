@@ -406,7 +406,7 @@ let routeDirectoryForSessions = (query: option<OpencodeClient.sessionQuery>): st
 let composerModelStorageKey = "opencode.settings.dat:composerModelOverride"
 let customModelSentinel = "__custom__"
 
-let modelPresetOptions = [
+let fallbackModelPresetOptions = [
   ("anthropic/claude-sonnet-4-5", "Claude Sonnet 4.5"),
   ("anthropic/claude-opus-4-1", "Claude Opus 4.1"),
   ("openai/gpt-5", "GPT-5"),
@@ -414,8 +414,8 @@ let modelPresetOptions = [
   ("openai/gpt-5.3-codex", "GPT-5.3 Codex"),
 ]
 
-let isKnownModelPreset = (value: string): bool =>
-  modelPresetOptions->Array.some(((presetValue, _)) => presetValue == value)
+let isKnownModelPreset = (~options: array<(string, string)>, value: string): bool =>
+  options->Array.some(((presetValue, _)) => presetValue == value)
 
 let getStoredComposerModel = (): option<string> =>
   try {
@@ -504,11 +504,12 @@ let make = (~defaultServer: string) => {
   let (recentEvents, setRecentEvents) = createSignal(([]: array<EventReducer.observedEvent>))
   let (composerDraft, setComposerDraft) = createSignal("")
   let initialComposerModel = getStoredComposerModel()->Option.getOr("")
+  let (composerModelOptions, setComposerModelOptions) = createSignal(fallbackModelPresetOptions)
   let (composerModelDraft, setComposerModelDraft) = createSignal(initialComposerModel)
   let (composerCustomModelEnabled, setComposerCustomModelEnabled) =
     createSignal(
       switch initialComposerModel->normalizeQueryText {
-      | Some(value) => !isKnownModelPreset(value)
+      | Some(value) => !isKnownModelPreset(~options=fallbackModelPresetOptions, value)
       | None => false
       },
     )
@@ -595,6 +596,30 @@ let make = (~defaultServer: string) => {
   ) => {
     await loadSessionListData(~query, ~firstError)
     await loadSessionStatusData(~query, ~firstError)
+  }
+
+  let loadComposerModelOptions = async () => {
+    let sdk = client()
+    switch await OpencodeClient.configModels(sdk) {
+    | Ok(items) => {
+        let nextOptions =
+          if items->Array.length > 0 {
+            items->Array.map(item => (item.id, item.label))
+          } else {
+            fallbackModelPresetOptions
+          }
+
+        setComposerModelOptions(_ => nextOptions)
+
+        switch composerModelDraft()->normalizeQueryText {
+        | Some(value) if isKnownModelPreset(~options=nextOptions, value) =>
+          setComposerCustomModelEnabled(_ => false)
+        | _ => ()
+        }
+      }
+    | Error(_) =>
+      setComposerModelOptions(_ => fallbackModelPresetOptions)
+    }
   }
 
   createEffect(() => {
@@ -806,7 +831,14 @@ let make = (~defaultServer: string) => {
 
     await loadHealthData(~firstError)
     await loadProjectData(~firstError)
+    await loadComposerModelOptions()
     await loadSessionData(~query, ~firstError)
+
+    switch focusedSessionId() {
+    | Some(activeSessionId) =>
+      await loadFocusedSessionById(~sessionId=activeSessionId)
+    | None => ()
+    }
 
     syncRequestState(setState, firstError.contents)
   }
@@ -1366,7 +1398,7 @@ let make = (~defaultServer: string) => {
         customModelSentinel
       } else {
         switch composerModelDraft()->normalizeQueryText {
-        | Some(value) if isKnownModelPreset(value) => value
+        | Some(value) if isKnownModelPreset(~options=composerModelOptions(), value) => value
         | Some(_) => customModelSentinel
         | None => ""
         }
@@ -1450,7 +1482,7 @@ let make = (~defaultServer: string) => {
                   }}
                 >
                   <option value="">{string("Default (session model)")}</option>
-                  {modelPresetOptions
+                  {composerModelOptions()
                   ->Array.map(((value, label)) => <option value={value}>{string(label)}</option>)
                   ->array}
                   <option value={customModelSentinel}>{string("Custom model...")}</option>

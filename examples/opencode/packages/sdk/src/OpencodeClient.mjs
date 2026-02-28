@@ -376,6 +376,58 @@ function decodeSessionStatusArray(value) {
   }
 }
 
+function decodeProviderModelEntries(providerName, value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return [];
+  }
+  let models = value.models;
+  if (typeof models === "object" && models !== null && !Array.isArray(models)) {
+    return Stdlib_Array.reduce(Object.entries(models), [], (acc, item) => {
+      let rawModel = item[1];
+      let displayLabel = item[0];
+      let modelId;
+      if (typeof rawModel === "object" && rawModel !== null && !Array.isArray(rawModel)) {
+        let match = rawModel["id"];
+        modelId = typeof match === "string" ? match : displayLabel;
+      } else {
+        modelId = displayLabel;
+      }
+      let id = modelId.trim();
+      if (id === "") {
+        return acc;
+      }
+      let label = displayLabel + ` (` + providerName + `)`;
+      return acc.concat([{
+          id: id,
+          label: label
+        }]);
+    });
+  } else {
+    return [];
+  }
+}
+
+function decodeConfigModelOptions(value) {
+  let options;
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    let providers = value.provider;
+    options = typeof providers === "object" && providers !== null && !Array.isArray(providers) ? Stdlib_Array.reduce(Object.entries(providers), [], (acc, item) => {
+        let providerOptions = decodeProviderModelEntries(item[0], item[1]);
+        return acc.concat(providerOptions);
+      }) : [];
+  } else {
+    options = [];
+  }
+  return Stdlib_Array.reduce(options, [], (acc, optionItem) => {
+    let exists = acc.some(existing => existing.id === optionItem.id);
+    if (exists) {
+      return acc;
+    } else {
+      return acc.concat([optionItem]);
+    }
+  });
+}
+
 function normalizedQueryValue(value) {
   if (value === undefined) {
     return;
@@ -592,6 +644,21 @@ async function sessionStatuses(client, query, param) {
   }
 }
 
+async function configModels(client) {
+  let error = await OpencodeHttp.getJson(client.http, "/config", undefined, undefined);
+  if (error.TAG === "Ok") {
+    return {
+      TAG: "Ok",
+      _0: decodeConfigModelOptions(error._0)
+    };
+  } else {
+    return {
+      TAG: "Error",
+      _0: error._0
+    };
+  }
+}
+
 async function sessionMessages(client, sessionId) {
   let error = await OpencodeHttp.getJson(client.http, `/session/` + sessionId + `/message`, undefined, undefined);
   if (error.TAG === "Ok") {
@@ -673,6 +740,7 @@ export {
   sessionById,
   sessionMessages,
   sessionStatuses,
+  configModels,
   sendSessionTextMessage,
 }
 /* OpencodeEvent Not a pure module */

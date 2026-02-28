@@ -291,7 +291,7 @@ let composerModelStorageKey = "opencode.settings.dat:composerModelOverride";
 
 let customModelSentinel = "__custom__";
 
-let modelPresetOptions = [
+let fallbackModelPresetOptions = [
   [
     "anthropic/claude-sonnet-4-5",
     "Claude Sonnet 4.5"
@@ -314,8 +314,8 @@ let modelPresetOptions = [
   ]
 ];
 
-function isKnownModelPreset(value) {
-  return modelPresetOptions.some(param => param[0] === value);
+function isKnownModelPreset(options, value) {
+  return options.some(param => param[0] === value);
 }
 
 function getStoredComposerModel() {
@@ -431,34 +431,37 @@ function App(props) {
   let setComposerDraft = match$20[1];
   let composerDraft = match$20[0];
   let initialComposerModel = Stdlib_Option.getOr(getStoredComposerModel(), "");
-  let match$21 = SolidJs.createSignal(initialComposerModel);
-  let setComposerModelDraft = match$21[1];
-  let composerModelDraft = match$21[0];
+  let match$21 = SolidJs.createSignal(fallbackModelPresetOptions);
+  let setComposerModelOptions = match$21[1];
+  let composerModelOptions = match$21[0];
+  let match$22 = SolidJs.createSignal(initialComposerModel);
+  let setComposerModelDraft = match$22[1];
+  let composerModelDraft = match$22[0];
   let value$2 = normalizeQueryText(initialComposerModel);
-  let match$22 = SolidJs.createSignal(value$2 !== undefined ? !isKnownModelPreset(value$2) : false);
-  let setComposerCustomModelEnabled = match$22[1];
-  let composerCustomModelEnabled = match$22[0];
-  let match$23 = SolidJs.createSignal(undefined);
-  let setComposerError = match$23[1];
-  let composerError = match$23[0];
-  let match$24 = SolidJs.createSignal(false);
-  let setIsComposerSending = match$24[1];
-  let isComposerSending = match$24[0];
-  let match$25 = SolidJs.createSignal("disconnected");
-  let setStreamStatus = match$25[1];
-  let streamStatus = match$25[0];
-  let match$26 = SolidJs.createSignal(undefined);
-  let setStreamError = match$26[1];
-  let streamError = match$26[0];
-  let match$27 = SolidJs.createSignal(0);
-  let setStreamEventCount = match$27[1];
-  let streamEventCount = match$27[0];
-  let match$28 = SolidJs.createSignal(undefined);
-  let setStreamLastEventKind = match$28[1];
-  let streamLastEventKind = match$28[0];
-  let match$29 = SolidJs.createSignal("Loading");
-  let setState = match$29[1];
-  let state = match$29[0];
+  let match$23 = SolidJs.createSignal(value$2 !== undefined ? !isKnownModelPreset(fallbackModelPresetOptions, value$2) : false);
+  let setComposerCustomModelEnabled = match$23[1];
+  let composerCustomModelEnabled = match$23[0];
+  let match$24 = SolidJs.createSignal(undefined);
+  let setComposerError = match$24[1];
+  let composerError = match$24[0];
+  let match$25 = SolidJs.createSignal(false);
+  let setIsComposerSending = match$25[1];
+  let isComposerSending = match$25[0];
+  let match$26 = SolidJs.createSignal("disconnected");
+  let setStreamStatus = match$26[1];
+  let streamStatus = match$26[0];
+  let match$27 = SolidJs.createSignal(undefined);
+  let setStreamError = match$27[1];
+  let streamError = match$27[0];
+  let match$28 = SolidJs.createSignal(0);
+  let setStreamEventCount = match$28[1];
+  let streamEventCount = match$28[0];
+  let match$29 = SolidJs.createSignal(undefined);
+  let setStreamLastEventKind = match$29[1];
+  let streamLastEventKind = match$29[0];
+  let match$30 = SolidJs.createSignal("Loading");
+  let setState = match$30[1];
+  let state = match$30[0];
   let client = SolidJs.createMemo(() => OpencodeClient.make(activeServer(), undefined, undefined, undefined));
   let loadHealthData = async firstError => {
     let sdk = client();
@@ -521,6 +524,23 @@ function App(props) {
   let loadSessionData = async (query, firstError) => {
     await loadSessionListData(query, firstError);
     return await loadSessionStatusData(query, firstError);
+  };
+  let loadComposerModelOptions = async () => {
+    let sdk = client();
+    let items = await OpencodeClient.configModels(sdk);
+    if (items.TAG !== "Ok") {
+      return setComposerModelOptions(param => fallbackModelPresetOptions);
+    }
+    let items$1 = items._0;
+    let nextOptions = items$1.length !== 0 ? items$1.map(item => [
+        item.id,
+        item.label
+      ]) : fallbackModelPresetOptions;
+    setComposerModelOptions(param => nextOptions);
+    let value = normalizeQueryText(composerModelDraft());
+    if (value !== undefined && isKnownModelPreset(nextOptions, value)) {
+      return setComposerCustomModelEnabled(param => false);
+    }
   };
   SolidJs.createEffect(() => {
     let value = composerModelDraft();
@@ -862,7 +882,12 @@ function App(props) {
     };
     await loadHealthData(firstError);
     await loadProjectData(firstError);
+    await loadComposerModelOptions();
     await loadSessionData(query, firstError);
+    let activeSessionId = focusedSessionId();
+    if (activeSessionId !== undefined) {
+      await loadFocusedSessionById(activeSessionId);
+    }
     return syncRequestState(setState, firstError.contents);
   };
   let refreshProjectSlice = async () => {
@@ -1474,7 +1499,7 @@ function App(props) {
       }
       let value = normalizeQueryText(composerModelDraft());
       if (value !== undefined) {
-        if (isKnownModelPreset(value)) {
+        if (isKnownModelPreset(composerModelOptions(), value)) {
           return value;
         } else {
           return customModelSentinel;
@@ -1594,7 +1619,7 @@ function App(props) {
               >
                 {"Default (session model)"}
               </option>
-              {modelPresetOptions.map(param => <option
+              {composerModelOptions().map(param => <option
                 value={param[0]}
               >
                 {param[1]}
