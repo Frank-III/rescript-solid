@@ -79,9 +79,16 @@ type sessionQuery = {
   limit: option<int>,
 }
 
+type modelSelection = {
+  providerID: string,
+  modelID: string,
+}
+
 type modelOption = {
   id: string,
   label: string,
+  providerID: string,
+  modelID: string,
 }
 
 let decodeMaybeString = (value: option<JSON.t>): option<string> =>
@@ -327,12 +334,43 @@ let decodeProviderModelEntries = (
           }
         | _ => displayLabel
         }
+
+      let providerID =
+        switch rawModel {
+        | JSON.Object(modelEntry) =>
+          switch Dict.get(modelEntry, "providerID") {
+          | Some(JSON.String(id)) => id
+          | _ => providerName
+          }
+        | _ => providerName
+        }
+
+      let resolvedModelID =
+        switch rawModel {
+        | JSON.Object(modelEntry) =>
+          switch Dict.get(modelEntry, "modelID") {
+          | Some(JSON.String(id)) => id
+          | _ => modelId
+          }
+        | _ => modelId
+        }
+
       let id = modelId->String.trim
-      if id == "" {
+      let normalizedProviderID = providerID->String.trim
+      let normalizedModelID = resolvedModelID->String.trim
+
+      if id == "" || normalizedProviderID == "" || normalizedModelID == "" {
         acc
       } else {
         let label = `${displayLabel} (${providerName})`
-        acc->Array.concat([{id, label}])
+        acc->Array.concat([
+          {
+            id,
+            label,
+            providerID: normalizedProviderID,
+            modelID: normalizedModelID,
+          },
+        ])
       }
     })
   | _ => []
@@ -370,6 +408,19 @@ let normalizedQueryValue = (value: option<string>): option<string> =>
       None
     } else {
       Some(trimmed)
+    }
+  | None => None
+  }
+
+let normalizeModelSelection = (value: option<modelSelection>): option<modelSelection> =>
+  switch value {
+  | Some(model) =>
+    let providerID = model.providerID->String.trim
+    let modelID = model.modelID->String.trim
+    if providerID == "" || modelID == "" {
+      None
+    } else {
+      Some({providerID, modelID})
     }
   | None => None
   }
@@ -550,18 +601,10 @@ let sendSessionTextMessage = async (
   client: t,
   ~sessionId: string,
   ~text: string,
-  ~model: option<string>=?,
+  ~model: option<modelSelection>=?,
 ) => {
   let trimmed = text->String.trim
-  let normalizedModel =
-    model->Option.flatMap(value => {
-      let trimmedModel = value->String.trim
-      if trimmedModel == "" {
-        None
-      } else {
-        Some(trimmedModel)
-      }
-    })
+  let normalizedModel = model->normalizeModelSelection
 
   if trimmed == "" {
     Ok(())
@@ -578,7 +621,15 @@ let sendSessionTextMessage = async (
       switch normalizedModel {
       | Some(modelValue) => [
           ("parts", JSON.Array([part])),
-          ("model", JSON.String(modelValue)),
+          (
+            "model",
+            JSON.Object(
+              Dict.fromArray([
+                ("providerID", JSON.String(modelValue.providerID)),
+                ("modelID", JSON.String(modelValue.modelID)),
+              ]),
+            ),
+          ),
         ]
       | None => [("parts", JSON.Array([part]))]
       }

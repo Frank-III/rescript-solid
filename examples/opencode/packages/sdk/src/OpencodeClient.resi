@@ -46,9 +46,16 @@ type sessionQuery = {
   limit: option<int>,
 }
 
+type modelSelection = {
+  providerID: string,
+  modelID: string,
+}
+
 type modelOption = {
   id: string,
   label: string,
+  providerID: string,
+  modelID: string,
 }
 
 let make: (
@@ -82,5 +89,5 @@ let sendSessionTextMessage: (
   t,
   ~sessionId: string,
   ~text: string,
-  ~model: string=?,
+  ~model: modelSelection=?,
 ) => promise<result<unit, OpencodeHttp.error>>

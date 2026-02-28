@@ -392,14 +392,32 @@ function decodeProviderModelEntries(providerName, value) {
       } else {
         modelId = displayLabel;
       }
+      let providerID;
+      if (typeof rawModel === "object" && rawModel !== null && !Array.isArray(rawModel)) {
+        let match$1 = rawModel["providerID"];
+        providerID = typeof match$1 === "string" ? match$1 : providerName;
+      } else {
+        providerID = providerName;
+      }
+      let resolvedModelID;
+      if (typeof rawModel === "object" && rawModel !== null && !Array.isArray(rawModel)) {
+        let match$2 = rawModel["modelID"];
+        resolvedModelID = typeof match$2 === "string" ? match$2 : modelId;
+      } else {
+        resolvedModelID = modelId;
+      }
       let id = modelId.trim();
-      if (id === "") {
+      let normalizedProviderID = providerID.trim();
+      let normalizedModelID = resolvedModelID.trim();
+      if (id === "" || normalizedProviderID === "" || normalizedModelID === "") {
         return acc;
       }
       let label = displayLabel + ` (` + providerName + `)`;
       return acc.concat([{
           id: id,
-          label: label
+          label: label,
+          providerID: normalizedProviderID,
+          modelID: normalizedModelID
         }]);
     });
   } else {
@@ -437,6 +455,22 @@ function normalizedQueryValue(value) {
     return;
   } else {
     return trimmed;
+  }
+}
+
+function normalizeModelSelection(value) {
+  if (value === undefined) {
+    return;
+  }
+  let providerID = value.providerID.trim();
+  let modelID = value.modelID.trim();
+  if (providerID === "" || modelID === "") {
+    return;
+  } else {
+    return {
+      providerID: providerID,
+      modelID: modelID
+    };
   }
 }
 
@@ -676,14 +710,7 @@ async function sessionMessages(client, sessionId) {
 
 async function sendSessionTextMessage(client, sessionId, text, model) {
   let trimmed = text.trim();
-  let normalizedModel = Stdlib_Option.flatMap(model, value => {
-    let trimmedModel = value.trim();
-    if (trimmedModel === "") {
-      return;
-    } else {
-      return trimmedModel;
-    }
-  });
+  let normalizedModel = normalizeModelSelection(model);
   if (trimmed === "") {
     return {
       TAG: "Ok",
@@ -707,7 +734,16 @@ async function sendSessionTextMessage(client, sessionId, text, model) {
       ],
       [
         "model",
-        normalizedModel
+        Object.fromEntries([
+          [
+            "providerID",
+            normalizedModel.providerID
+          ],
+          [
+            "modelID",
+            normalizedModel.modelID
+          ]
+        ])
       ]
     ] : [[
         "parts",

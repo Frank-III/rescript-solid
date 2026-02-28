@@ -292,30 +292,67 @@ let composerModelStorageKey = "opencode.settings.dat:composerModelOverride";
 let customModelSentinel = "__custom__";
 
 let fallbackModelPresetOptions = [
-  [
-    "anthropic/claude-sonnet-4-5",
-    "Claude Sonnet 4.5"
-  ],
-  [
-    "anthropic/claude-opus-4-1",
-    "Claude Opus 4.1"
-  ],
-  [
-    "openai/gpt-5",
-    "GPT-5"
-  ],
-  [
-    "openai/gpt-5-mini",
-    "GPT-5 Mini"
-  ],
-  [
-    "openai/gpt-5.3-codex",
-    "GPT-5.3 Codex"
-  ]
+  {
+    value: "anthropic/claude-sonnet-4-5",
+    label: "Claude Sonnet 4.5",
+    providerID: "anthropic",
+    modelID: "claude-sonnet-4-5"
+  },
+  {
+    value: "anthropic/claude-opus-4-1",
+    label: "Claude Opus 4.1",
+    providerID: "anthropic",
+    modelID: "claude-opus-4-1"
+  },
+  {
+    value: "openai/gpt-5",
+    label: "GPT-5",
+    providerID: "openai",
+    modelID: "gpt-5"
+  },
+  {
+    value: "openai/gpt-5-mini",
+    label: "GPT-5 Mini",
+    providerID: "openai",
+    modelID: "gpt-5-mini"
+  },
+  {
+    value: "openai/gpt-5.3-codex",
+    label: "GPT-5.3 Codex",
+    providerID: "openai",
+    modelID: "gpt-5.3-codex"
+  }
 ];
 
 function isKnownModelPreset(options, value) {
-  return options.some(param => param[0] === value);
+  return options.some(option => option.value === value);
+}
+
+function resolveModelSelection(options, value) {
+  let option = options.find(option => option.value === value);
+  if (option !== undefined) {
+    return {
+      providerID: option.providerID,
+      modelID: option.modelID
+    };
+  } else {
+    let match = value.split("/");
+    if (match.length !== 2) {
+      return;
+    }
+    let providerID = match[0];
+    let modelID = match[1];
+    let normalizedProviderID = providerID.trim();
+    let normalizedModelID = modelID.trim();
+    if (normalizedProviderID === "" || normalizedModelID === "") {
+      return;
+    } else {
+      return {
+        providerID: normalizedProviderID,
+        modelID: normalizedModelID
+      };
+    }
+  }
 }
 
 function getStoredComposerModel() {
@@ -328,6 +365,59 @@ function getStoredComposerModel() {
     }
   } catch (exn) {
     return;
+  }
+}
+
+function pendingComposerStorageKeyForSession(sessionId) {
+  return "opencode.settings.dat:pendingComposerEntries" + `:` + sessionId;
+}
+
+function getStoredPendingComposerText(sessionId) {
+  try {
+    let storage = window.localStorage;
+    if (storage !== undefined) {
+      return Stdlib_Option.flatMap(Primitive_option.fromNullable(Primitive_option.valFromOption(storage).getItem(pendingComposerStorageKeyForSession(sessionId))), normalizeQueryText);
+    } else {
+      return;
+    }
+  } catch (exn) {
+    return;
+  }
+}
+
+function setStoredPendingComposerText(sessionId, text) {
+  try {
+    let storage = window.localStorage;
+    if (storage === undefined) {
+      return;
+    }
+    let storage$1 = Primitive_option.valFromOption(storage);
+    let trimmedText = Stdlib_Option.flatMap(text, normalizeQueryText);
+    if (trimmedText !== undefined) {
+      storage$1.setItem(pendingComposerStorageKeyForSession(sessionId), trimmedText);
+    } else {
+      storage$1.removeItem(pendingComposerStorageKeyForSession(sessionId));
+    }
+    return;
+  } catch (exn) {
+    return;
+  }
+}
+
+function resolvePendingComposerEntry(requestedSessionId, hydratedSessionId) {
+  let text = getStoredPendingComposerText(requestedSessionId);
+  if (text !== undefined) {
+    return [
+      requestedSessionId,
+      text
+    ];
+  } else if (hydratedSessionId === requestedSessionId) {
+    return;
+  } else {
+    return Stdlib_Option.map(getStoredPendingComposerText(hydratedSessionId), text => [
+      hydratedSessionId,
+      text
+    ]);
   }
 }
 
@@ -532,10 +622,12 @@ function App(props) {
       return setComposerModelOptions(param => fallbackModelPresetOptions);
     }
     let items$1 = items._0;
-    let nextOptions = items$1.length !== 0 ? items$1.map(item => [
-        item.id,
-        item.label
-      ]) : fallbackModelPresetOptions;
+    let nextOptions = items$1.length !== 0 ? items$1.map(item => ({
+        value: item.id,
+        label: item.label,
+        providerID: item.providerID,
+        modelID: item.modelID
+      })) : fallbackModelPresetOptions;
     setComposerModelOptions(param => nextOptions);
     let value = normalizeQueryText(composerModelDraft());
     if (value !== undefined && isKnownModelPreset(nextOptions, value)) {
@@ -568,6 +660,14 @@ function App(props) {
       return;
     }
     let messages$1 = messages._0;
+    let hydratedSessionId = Stdlib_Option.getOr(Stdlib_Array.findMap(messages$1, message => {
+      let value = message.sessionId.trim();
+      if (value === "") {
+        return;
+      } else {
+        return value;
+      }
+    }), sessionId);
     let hydratedMessages = messages$1.map(message => {
       let snapshot_id = message.id;
       let snapshot_sessionId = message.sessionId;
@@ -601,16 +701,73 @@ function App(props) {
           text: part.text
         }]);
     }));
+    let historyHasText = text => {
+      let trimmed = text.trim();
+      if (trimmed !== "") {
+        return hydratedParts.some(part => part.text.trim() === trimmed);
+      } else {
+        return false;
+      }
+    };
+    let pendingComposerEntry = resolvePendingComposerEntry(sessionId, hydratedSessionId);
+    let pendingText = Stdlib_Option.map(pendingComposerEntry, param => param[1]);
+    let pendingTrackedMessages;
+    if (pendingText !== undefined) {
+      if (historyHasText(pendingText)) {
+        pendingTrackedMessages = [];
+      } else {
+        let pendingMessageId = `pending-user-message-` + hydratedSessionId;
+        let snapshot_role = "UserRole";
+        let snapshot = {
+          id: pendingMessageId,
+          sessionId: hydratedSessionId,
+          role: snapshot_role
+        };
+        pendingTrackedMessages = [{
+            sessionId: hydratedSessionId,
+            message: snapshot
+          }];
+      }
+    } else {
+      pendingTrackedMessages = [];
+    }
+    let pendingTrackedParts;
+    if (pendingText !== undefined) {
+      if (historyHasText(pendingText)) {
+        pendingTrackedParts = [];
+      } else {
+        let pendingMessageId$1 = `pending-user-message-` + hydratedSessionId;
+        let snapshot_id = `pending-user-part-` + hydratedSessionId;
+        let snapshot_partType = "TextPart";
+        let snapshot$1 = {
+          id: snapshot_id,
+          sessionId: hydratedSessionId,
+          messageId: pendingMessageId$1,
+          partType: snapshot_partType
+        };
+        pendingTrackedParts = [{
+            sessionId: hydratedSessionId,
+            messageId: pendingMessageId$1,
+            part: snapshot$1,
+            streamedChars: pendingText.length,
+            text: pendingText
+          }];
+      }
+    } else {
+      pendingTrackedParts = [];
+    }
+    let hydratedMessagesAll = hydratedMessages.concat(pendingTrackedMessages);
+    let hydratedPartsAll = hydratedParts.concat(pendingTrackedParts);
     setTrackedMessages(items => {
-      let sessionItems = items.filter(item => item.sessionId === sessionId);
-      let remaining = items.filter(item => item.sessionId !== sessionId);
-      let mergedSessionItems = Stdlib_Array.reduce(hydratedMessages, sessionItems, (acc, hydrated) => upsertTrackedMessage(acc, hydrated.message));
+      let sessionItems = items.filter(item => item.sessionId === hydratedSessionId);
+      let remaining = items.filter(item => item.sessionId !== hydratedSessionId);
+      let mergedSessionItems = Stdlib_Array.reduce(hydratedMessagesAll, sessionItems, (acc, hydrated) => upsertTrackedMessage(acc, hydrated.message));
       return mergedSessionItems.concat(remaining);
     });
     return setTrackedParts(items => {
-      let sessionItems = items.filter(item => item.sessionId === sessionId);
-      let remaining = items.filter(item => item.sessionId !== sessionId);
-      let mergedSessionItems = Stdlib_Array.reduce(hydratedParts, sessionItems, (acc, hydratedPart) => {
+      let sessionItems = items.filter(item => item.sessionId === hydratedSessionId);
+      let remaining = items.filter(item => item.sessionId !== hydratedSessionId);
+      let mergedSessionItems = Stdlib_Array.reduce(hydratedPartsAll, sessionItems, (acc, hydratedPart) => {
         let withPart = upsertTrackedPart(acc, hydratedPart.part);
         return withPart.map(item => {
           if (item.sessionId === hydratedPart.sessionId && item.messageId === hydratedPart.messageId && item.part.id === hydratedPart.part.id) {
@@ -636,7 +793,8 @@ function App(props) {
       let found$1 = found._0;
       setFocusedSession(param => found$1);
       setFocusedSessionError(param => {});
-      await hydrateSessionConversationById(sessionId);
+      let hydratedSessionId = found$1 !== undefined ? found$1.id : sessionId;
+      await hydrateSessionConversationById(hydratedSessionId);
       return;
     }
     let error = found._0;
@@ -691,6 +849,7 @@ function App(props) {
     setTrackedDiffs(items => items.filter(item => item.sessionId !== payload.sessionId));
     setTrackedMessages(items => items.filter(item => item.sessionId !== payload.sessionId));
     setTrackedParts(items => items.filter(item => item.sessionId !== payload.sessionId));
+    setStoredPendingComposerText(payload.sessionId, undefined);
     let activeSessionId = focusedSessionId();
     if (activeSessionId !== undefined && activeSessionId === payload.sessionId) {
       setFocusedSession(param => {});
@@ -1481,14 +1640,17 @@ function App(props) {
           }
         });
       });
+      setStoredPendingComposerText(composerTargetSessionId, prompt);
       setComposerDraft(param => "");
       setFocusedSessionId(param => composerTargetSessionId);
       loadFocusedSessionById(composerTargetSessionId);
       refreshSessionSlice(sessionQuery());
-      let model = normalizeQueryText(composerModelDraft());
+      let value = normalizeQueryText(composerModelDraft());
+      let model = value !== undefined ? resolveModelSelection(composerModelOptions(), value) : undefined;
       let error = await OpencodeClient.sendSessionTextMessage(client(), composerTargetSessionId, prompt, model);
       if (error.TAG !== "Ok") {
         let error$1 = error._0;
+        setStoredPendingComposerText(composerTargetSessionId, undefined);
         setComposerError(param => `Send failed: ` + OpencodeClient.errorToString(error$1));
       }
       return setIsComposerSending(param => false);
@@ -1619,10 +1781,10 @@ function App(props) {
               >
                 {"Default (session model)"}
               </option>
-              {composerModelOptions().map(param => <option
-                value={param[0]}
+              {composerModelOptions().map(option => <option
+                value={option.value}
               >
-                {param[1]}
+                {option.label}
               </option>)}
               <option
                 value={customModelSentinel}

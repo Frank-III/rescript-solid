@@ -404,18 +404,73 @@ let routeDirectoryForSessions = (query: option<OpencodeClient.sessionQuery>): st
   }
 
 let composerModelStorageKey = "opencode.settings.dat:composerModelOverride"
+let pendingComposerStorageKey = "opencode.settings.dat:pendingComposerEntries"
 let customModelSentinel = "__custom__"
 
-let fallbackModelPresetOptions = [
-  ("anthropic/claude-sonnet-4-5", "Claude Sonnet 4.5"),
-  ("anthropic/claude-opus-4-1", "Claude Opus 4.1"),
-  ("openai/gpt-5", "GPT-5"),
-  ("openai/gpt-5-mini", "GPT-5 Mini"),
-  ("openai/gpt-5.3-codex", "GPT-5.3 Codex"),
+type composerModelOption = {
+  value: string,
+  label: string,
+  providerID: string,
+  modelID: string,
+}
+
+let fallbackModelPresetOptions: array<composerModelOption> = [
+  {
+    value: "anthropic/claude-sonnet-4-5",
+    label: "Claude Sonnet 4.5",
+    providerID: "anthropic",
+    modelID: "claude-sonnet-4-5",
+  },
+  {
+    value: "anthropic/claude-opus-4-1",
+    label: "Claude Opus 4.1",
+    providerID: "anthropic",
+    modelID: "claude-opus-4-1",
+  },
+  {
+    value: "openai/gpt-5",
+    label: "GPT-5",
+    providerID: "openai",
+    modelID: "gpt-5",
+  },
+  {
+    value: "openai/gpt-5-mini",
+    label: "GPT-5 Mini",
+    providerID: "openai",
+    modelID: "gpt-5-mini",
+  },
+  {
+    value: "openai/gpt-5.3-codex",
+    label: "GPT-5.3 Codex",
+    providerID: "openai",
+    modelID: "gpt-5.3-codex",
+  },
 ]
 
-let isKnownModelPreset = (~options: array<(string, string)>, value: string): bool =>
-  options->Array.some(((presetValue, _)) => presetValue == value)
+let isKnownModelPreset = (~options: array<composerModelOption>, value: string): bool =>
+  options->Array.some(option => option.value == value)
+
+let parseModelSelection = (value: string): option<OpencodeClient.modelSelection> =>
+  switch value->String.split("/") {
+  | [providerID, modelID] =>
+    let normalizedProviderID = providerID->String.trim
+    let normalizedModelID = modelID->String.trim
+    if normalizedProviderID == "" || normalizedModelID == "" {
+      None
+    } else {
+      Some({providerID: normalizedProviderID, modelID: normalizedModelID})
+    }
+  | _ => None
+  }
+
+let resolveModelSelection = (
+  ~options: array<composerModelOption>,
+  ~value: string,
+): option<OpencodeClient.modelSelection> =>
+  switch options->Array.find(option => option.value == value) {
+  | Some(option) => Some({providerID: option.providerID, modelID: option.modelID})
+  | None => parseModelSelection(value)
+  }
 
 let getStoredComposerModel = (): option<string> =>
   try {
@@ -440,6 +495,65 @@ let setStoredComposerModel = (value: string): unit =>
     }
   } catch {
   | _ => ()
+  }
+
+let pendingComposerStorageKeyForSession = (sessionId: string): string =>
+  `${pendingComposerStorageKey}:${sessionId}`
+
+let getStoredPendingComposerText = (sessionId: string): option<string> =>
+  try {
+    switch browserStorage {
+    | Some(storage) =>
+      storage
+      ->storageGetItem(pendingComposerStorageKeyForSession(sessionId))
+      ->Nullable.toOption
+      ->Option.flatMap(normalizeQueryText)
+    | None => None
+    }
+  } catch {
+  | _ => None
+  }
+
+let setStoredPendingComposerText = (~sessionId: string, ~text: option<string>): unit =>
+  try {
+    switch browserStorage {
+    | Some(storage) =>
+      switch text->Option.flatMap(normalizeQueryText) {
+      | Some(trimmedText) =>
+        storage->storageSetItem(pendingComposerStorageKeyForSession(sessionId), trimmedText)
+      | None =>
+        storage->storageRemoveItem(pendingComposerStorageKeyForSession(sessionId))
+      }
+    | None => ()
+    }
+  } catch {
+  | _ => ()
+  }
+
+let rememberPendingComposerText = (~sessionId: string, ~text: string): unit =>
+  setStoredPendingComposerText(~sessionId, ~text=Some(text))
+
+let clearPendingComposerEntry = (~sessionId: string, ~entryId: string): unit => {
+  let _ = entryId
+  setStoredPendingComposerText(~sessionId, ~text=None)
+}
+
+let clearPendingComposerEntriesForSession = (sessionId: string): unit => {
+  setStoredPendingComposerText(~sessionId, ~text=None)
+}
+
+let resolvePendingComposerEntry = (
+  ~requestedSessionId: string,
+  ~hydratedSessionId: string,
+): option<(string, string)> =>
+  switch getStoredPendingComposerText(requestedSessionId) {
+  | Some(text) => Some((requestedSessionId, text))
+  | None =>
+    if hydratedSessionId == requestedSessionId {
+      None
+    } else {
+      getStoredPendingComposerText(hydratedSessionId)->Option.map(text => (hydratedSessionId, text))
+    }
   }
 
 let rememberFirstError = (firstError: ref<option<string>>, message: string) =>
@@ -604,7 +718,13 @@ let make = (~defaultServer: string) => {
     | Ok(items) => {
         let nextOptions =
           if items->Array.length > 0 {
-            items->Array.map(item => (item.id, item.label))
+            items
+            ->Array.map(item => {
+              value: item.id,
+              label: item.label,
+              providerID: item.providerID,
+              modelID: item.modelID,
+            })
           } else {
             fallbackModelPresetOptions
           }
@@ -630,6 +750,16 @@ let make = (~defaultServer: string) => {
     let sdk = client()
     switch await OpencodeClient.sessionMessages(sdk, ~sessionId) {
     | Ok(messages) => {
+        let hydratedSessionId =
+          messages
+          ->Array.findMap(message =>
+            switch message.sessionId->String.trim {
+            | "" => None
+            | value => Some(value)
+            }
+          )
+          ->Option.getOr(sessionId)
+
         let hydratedMessages =
           messages->Array.map(message => {
             let snapshot: OpencodeEvent.messageSnapshot = {
@@ -663,21 +793,73 @@ let make = (~defaultServer: string) => {
             })
           )
 
+        let historyHasText = (text: string): bool => {
+          let trimmed = text->String.trim
+          trimmed != ""
+          && hydratedParts->Array.some(part => part.text->String.trim == trimmed)
+        }
+
+        let pendingComposerEntry =
+          resolvePendingComposerEntry(
+            ~requestedSessionId=sessionId,
+            ~hydratedSessionId,
+          )
+
+        let pendingText = pendingComposerEntry->Option.map(((_, text)) => text)
+
+        let pendingTrackedMessages =
+          switch pendingText {
+          | Some(text) if !historyHasText(text) => {
+              let pendingMessageId = `pending-user-message-${hydratedSessionId}`
+              let snapshot: OpencodeEvent.messageSnapshot = {
+                id: pendingMessageId,
+                sessionId: hydratedSessionId,
+                role: Some(OpencodeEvent.UserRole),
+              }
+              [{sessionId: hydratedSessionId, message: snapshot}]
+            }
+          | _ => []
+          }
+
+        let pendingTrackedParts =
+          switch pendingText {
+          | Some(text) if !historyHasText(text) => {
+              let pendingMessageId = `pending-user-message-${hydratedSessionId}`
+              let snapshot: OpencodeEvent.partSnapshot = {
+                id: `pending-user-part-${hydratedSessionId}`,
+                sessionId: hydratedSessionId,
+                messageId: pendingMessageId,
+                partType: Some(OpencodeEvent.TextPart),
+              }
+              [{
+                sessionId: hydratedSessionId,
+                messageId: pendingMessageId,
+                part: snapshot,
+                streamedChars: text->String.length,
+                text,
+              }]
+            }
+          | _ => []
+          }
+
+        let hydratedMessagesAll = Array.concat(hydratedMessages, pendingTrackedMessages)
+        let hydratedPartsAll = Array.concat(hydratedParts, pendingTrackedParts)
+
         setTrackedMessages(items => {
-          let sessionItems = items->Array.filter(item => item.sessionId == sessionId)
-          let remaining = items->Array.filter(item => item.sessionId != sessionId)
+          let sessionItems = items->Array.filter(item => item.sessionId == hydratedSessionId)
+          let remaining = items->Array.filter(item => item.sessionId != hydratedSessionId)
           let mergedSessionItems =
-            hydratedMessages->Array.reduce(sessionItems, (acc, hydrated) =>
+            hydratedMessagesAll->Array.reduce(sessionItems, (acc, hydrated) =>
               upsertTrackedMessage(~items=acc, ~message=hydrated.message)
             )
           Array.concat(mergedSessionItems, remaining)
         })
 
         setTrackedParts(items => {
-          let sessionItems = items->Array.filter(item => item.sessionId == sessionId)
-          let remaining = items->Array.filter(item => item.sessionId != sessionId)
+          let sessionItems = items->Array.filter(item => item.sessionId == hydratedSessionId)
+          let remaining = items->Array.filter(item => item.sessionId != hydratedSessionId)
           let mergedSessionItems =
-            hydratedParts->Array.reduce(sessionItems, (acc, hydratedPart) => {
+            hydratedPartsAll->Array.reduce(sessionItems, (acc, hydratedPart) => {
               let withPart = upsertTrackedPart(~items=acc, ~part=hydratedPart.part)
               withPart->Array.map(item =>
                 if item.sessionId == hydratedPart.sessionId && item.messageId == hydratedPart.messageId && item.part.id == hydratedPart.part.id {
@@ -693,6 +875,7 @@ let make = (~defaultServer: string) => {
             })
           Array.concat(mergedSessionItems, remaining)
         })
+
       }
     | Error(_) => ()
     }
@@ -704,7 +887,12 @@ let make = (~defaultServer: string) => {
     | Ok(found) => {
         setFocusedSession(_ => found)
         setFocusedSessionError(_ => None)
-        let _ = await hydrateSessionConversationById(~sessionId)
+        let hydratedSessionId =
+          switch found {
+          | Some(session) => session.id
+          | None => sessionId
+          }
+        let _ = await hydrateSessionConversationById(~sessionId=hydratedSessionId)
       }
     | Error(error) => {
         setFocusedSession(_ => None)
@@ -758,6 +946,7 @@ let make = (~defaultServer: string) => {
     setTrackedDiffs(items => items->Array.filter(item => item.sessionId != payload.sessionId))
     setTrackedMessages(items => items->Array.filter(item => item.sessionId != payload.sessionId))
     setTrackedParts(items => items->Array.filter(item => item.sessionId != payload.sessionId))
+    clearPendingComposerEntriesForSession(payload.sessionId)
 
     switch focusedSessionId() {
     | Some(activeSessionId) if activeSessionId == payload.sessionId => {
@@ -1370,11 +1559,16 @@ let make = (~defaultServer: string) => {
             }
           )
         })
+        rememberPendingComposerText(~sessionId=composerTargetSessionId, ~text=prompt)
         setComposerDraft(_ => "")
         setFocusedSessionId(_ => Some(composerTargetSessionId))
         let _ = loadFocusedSessionById(~sessionId=composerTargetSessionId)
         let _ = refreshSessionSlice(~query=sessionQuery())
-        let model = composerModelDraft()->normalizeQueryText
+        let model =
+          switch composerModelDraft()->normalizeQueryText {
+          | Some(value) => resolveModelSelection(~options=composerModelOptions(), ~value)
+          | None => None
+          }
         switch await OpencodeClient.sendSessionTextMessage(
           client(),
           ~sessionId=composerTargetSessionId,
@@ -1382,7 +1576,10 @@ let make = (~defaultServer: string) => {
           ~model=?model,
         ) {
         | Ok(()) => ()
-        | Error(error) => setComposerError(_ => Some(`Send failed: ${OpencodeClient.errorToString(error)}`))
+        | Error(error) => {
+            clearPendingComposerEntry(~sessionId=composerTargetSessionId, ~entryId=localMessageId)
+            setComposerError(_ => Some(`Send failed: ${OpencodeClient.errorToString(error)}`))
+          }
         }
         setIsComposerSending(_ => false)
       }
@@ -1483,7 +1680,7 @@ let make = (~defaultServer: string) => {
                 >
                   <option value="">{string("Default (session model)")}</option>
                   {composerModelOptions()
-                  ->Array.map(((value, label)) => <option value={value}>{string(label)}</option>)
+                  ->Array.map(option => <option value={option.value}>{string(option.label)}</option>)
                   ->array}
                   <option value={customModelSentinel}>{string("Custom model...")}</option>
                 </select>
