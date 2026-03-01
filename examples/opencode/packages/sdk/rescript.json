@@ -1,0 +1,7 @@
+{
+  "name": "opencode-example-sdk",
+  "sources": [{"dir": "src", "subdirs": true}],
+  "dependencies": ["sury"],
+  "package-specs": {"module": "esmodule", "in-source": true},
+  "suffix": ".mjs"
+}

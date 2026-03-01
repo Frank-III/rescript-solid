@@ -2,8 +2,8 @@
 
 import * as SolidJs from "solid-js";
 import * as H from "solid-js/h";
-import * as Stdlib_Option from "@rescript/runtime/lib/es6/Stdlib_Option.js";
-import * as Primitive_option from "@rescript/runtime/lib/es6/Primitive_option.js";
+import * as Stdlib_Option from "@rescript/runtime/lib/es6/Stdlib_Option.mjs";
+import * as Primitive_option from "@rescript/runtime/lib/es6/Primitive_option.mjs";
 
 let Show = {};
 

@@ -1,0 +1,13 @@
+{
+  "name": "solid-examples-opencode",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "bun run --cwd packages/sdk res:build && bun run --cwd packages/web build",
+    "dev": "bun run --cwd packages/web dev",
+    "res:build": "bun run --cwd packages/sdk res:build && bun run --cwd packages/web res:build",
+    "clean": "bun run --cwd packages/sdk res:clean && bun run --cwd packages/web res:clean"
+  }
+}

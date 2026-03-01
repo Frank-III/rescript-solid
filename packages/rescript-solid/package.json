@@ -27,7 +27,7 @@
     "watch": "rescript -w"
   },
   "peerDependencies": {
-    "rescript": "12.x",
+    "rescript": ">=13.0.0-alpha.1 <14.0.0",
     "solid-js": ">=1.8.0",
     "@kobalte/core": ">=0.13.0",
     "@solid-primitives/match": ">=0.0.100",

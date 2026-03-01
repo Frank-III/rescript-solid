@@ -23,9 +23,20 @@ let lident ~loc txt =
 
 let unit_pat ~loc = ppat_construct ~loc (lident ~loc "()") None
 
+let res_arity_attr ~loc arity =
+  attribute
+    ~loc
+    ~name:{ loc; txt = "res.arity" }
+    ~payload:(PStr [ pstr_eval ~loc (eint ~loc arity) [] ])
+
+let mark_uncurried ~loc arity fn_expr =
+  let wrapped = pexp_construct ~loc (lident ~loc "Function$") (Some fn_expr) in
+  { wrapped with pexp_attributes = res_arity_attr ~loc arity :: wrapped.pexp_attributes }
+
 let rewrite_defer expr =
   let loc = expr.pexp_loc in
   let thunk = pexp_fun ~loc Nolabel None (unit_pat ~loc) expr in
+  let thunk = mark_uncurried ~loc 1 thunk in
   let call = pexp_ident ~loc (lident ~loc "SolidJSX.ppxDefer") in
   pexp_apply ~loc call [ (Nolabel, thunk) ]
 

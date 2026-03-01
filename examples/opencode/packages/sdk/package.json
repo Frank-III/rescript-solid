@@ -1,0 +1,15 @@
+{
+  "name": "opencode-example-sdk",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "res:build": "bunx rescript",
+    "res:clean": "bunx rescript clean"
+  },
+  "dependencies": {
+    "sury": "11.0.0-alpha.4"
+  },
+  "devDependencies": {
+    "rescript": "13.0.0-alpha.1"
+  }
+}

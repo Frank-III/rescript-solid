@@ -16,7 +16,7 @@
     "watch": "rescript -w"
   },
   "peerDependencies": {
-    "rescript": "12.x",
+    "rescript": ">=13.0.0-alpha.1 <14.0.0",
     "@solidjs/router": ">=0.15.0"
   },
   "devDependencies": {

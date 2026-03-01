@@ -1,0 +1,24 @@
+{
+  "name": "opencode-example-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "bun run res:build && vite build",
+    "res:build": "bun run --cwd ../sdk res:build && bunx rescript",
+    "res:watch": "bunx rescript -w",
+    "res:clean": "bunx rescript clean"
+  },
+  "dependencies": {
+    "@solidjs/router": "^0.15.3",
+    "opencode-example-sdk": "workspace:*",
+    "rescript-solid": "workspace:*",
+    "rescript-solid-router": "workspace:*",
+    "solid-js": "^1.9.9"
+  },
+  "devDependencies": {
+    "rescript": "13.0.0-alpha.1",
+    "vite": "^7.1.9",
+    "vite-plugin-solid": "^2.11.8"
+  }
+}

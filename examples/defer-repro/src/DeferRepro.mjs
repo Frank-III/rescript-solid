@@ -4,7 +4,7 @@ import * as SolidJSX from "rescript-solid/src/SolidJSX.mjs";
 import * as SolidJs from "solid-js";
 import * as H from "solid-js/h";
 
-function DeferNativeProbe(props) {
+function DeferRepro(props) {
   let match = SolidJs.createSignal(0);
   let count = match[0];
   return <div>
@@ -17,7 +17,7 @@ function DeferNativeProbe(props) {
   </div>;
 }
 
-let make = DeferNativeProbe;
+let make = DeferRepro;
 
 export {
   make,

@@ -1,0 +1,8 @@
+{
+  "name": "opencode-example-web",
+  "sources": [{"dir": "src", "subdirs": true}],
+  "package-specs": {"module": "esmodule", "in-source": true},
+  "jsx": {"version": 4, "module": "Solid", "preserve": true},
+  "suffix": ".mjs",
+  "dependencies": ["rescript-solid", "rescript-solid-router", "opencode-example-sdk"]
+}
