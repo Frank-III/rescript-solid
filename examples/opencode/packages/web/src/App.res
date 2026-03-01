@@ -438,117 +438,100 @@ let routeDirectoryForSessions = (query: option<OpencodeClient.sessionQuery>): st
   | _ => "workspace"
   }
 
-@jsx.component
-let ServerStatusPanel = (
-  ~isRouting: bool,
-  ~activeServer: string,
-  ~locationPathname: string,
-  ~streamStatusText: string,
-  ~streamEventCount: int,
-  ~streamError: option<string>,
-  ~streamLastEventKind: option<string>,
-  ~serverDraft: string,
-  ~onServerDraftChange: string => unit,
-  ~onApplyServer: unit => unit,
-  ~onResetServer: unit => unit,
-  ~onRefreshServer: unit => unit,
-) =>
-  <section className="panel statusPanel">
-    <div className="statusLine">
-      <h2> {string("Server")} </h2>
-      <span
-        className={if isRouting {
-          "routeState moving"
-        } else {
-          "routeState"
-        }}
-      >
-        {string(
-          if isRouting {
-            "routing"
-          } else {
-            "idle"
-          },
-        )}
-      </span>
-    </div>
-    <code> {string(activeServer)} </code>
-    <p className="statusPath"> {string(`Path: ${locationPathname}`)} </p>
-    <p className="streamMeta">
-      {string(`Stream: ${streamStatusText} (events ${streamEventCount->Int.toString})`)}
-    </p>
-    {@show
-    switch streamError {
-    | Some(message) => <p className="errorText"> {string(`Stream error: ${message}`)} </p>
-    | None => <span></span>
-    }}
-    <p className="streamMeta">
-      {string(`Last event: ${streamLastEventKind->Option.getOr("none")}`)}
-    </p>
-
-    <div className="serverForm">
-      <input
-        id="server-url-input"
-        type_="text"
-        value={serverDraft}
-        onInput={event => {
-          let value = event->JsxEvent.Form.target->getInputValue
-          onServerDraftChange(value)
-        }}
-        placeholder="https://your-opencode-server"
-      />
-      <button id="server-apply-btn" className="refreshBtn" onClick={_ => onApplyServer()}>
-        {string("Apply")}
-      </button>
-      <button id="server-reset-btn" className="ghostBtn" onClick={_ => onResetServer()}>
-        {string("Reset")}
-      </button>
-      <button id="server-refresh-btn" className="ghostBtn" onClick={_ => onRefreshServer()}>
-        {string("Refresh")}
-      </button>
-    </div>
-  </section>
-
-@jsx.component
-let SessionsEventList = (
-  ~sessions: array<OpencodeClient.sessionSummary>,
-  ~sessionStatuses: array<OpencodeClient.sessionStatusItem>,
-  ~sessionQuery: option<OpencodeClient.sessionQuery>,
-) => {
-  let routeDirectory = routeDirectoryForSessions(sessionQuery)
-  <ul className="eventList">
-    <For
-      each_={sessions}
-      fallback_={<li className="eventRow">
-        <span className="loadingText"> {string("No sessions matched the current filters")} </span>
-      </li>}
-    >
-      {(session, index) => {
-        let status = findSessionStatus(sessionStatuses, session.id)
-        <li className="eventRow">
-          <span className="eventIndex"> {string(`#${index()->Int.toString}`)} </span>
-          <span className="eventKind"> {string(session.id)} </span>
-          <span className="sessionMeta"> {string(renderSessionSubtitle(session))} </span>
-          <span
-            className={if status == Some(#running) {
-              "badge hot"
-            } else {
-              "badge"
-            }}
-          >
-            {string(renderSessionStatus(status))}
-          </span>
-          <R.Link
-            href_={`/${routeDirectory}/session/${session.id}`}
-            inactiveClass_="inlineLink"
-            activeClass_="inlineLink"
-          >
-            {string("open")}
-          </R.Link>
-        </li>
+module ServerStatusPanel = {
+  @jsx.component
+  let make = (
+    ~isRouting: bool,
+    ~activeServer: string,
+    ~locationPathname: string,
+    ~streamStatusText: string,
+    ~streamEventCount: int,
+    ~streamError: option<string>,
+    ~streamLastEventKind: option<string>,
+    ~serverDraft: string,
+    ~onServerDraftChange: string => unit,
+    ~onApplyServer: unit => unit,
+    ~onResetServer: unit => unit,
+    ~onRefreshServer: unit => unit,
+  ) =>
+    <section className="panel statusPanel">
+      <div className="statusLine">
+        <h2>{string("Server")}</h2>
+        <span className={if isRouting {"routeState moving"} else {"routeState"}}>
+          {string(if isRouting {"routing"} else {"idle"})}
+        </span>
+      </div>
+      <code>{string(activeServer)}</code>
+      <p className="statusPath">{string(`Path: ${locationPathname}`)}</p>
+      <p className="streamMeta">
+        {string(`Stream: ${streamStatusText} (events ${streamEventCount->Int.toString})`)}
+      </p>
+      {@show switch streamError {
+      | Some(message) => <p className="errorText">{string(`Stream error: ${message}`)}</p>
+      | None => <span></span>
       }}
-    </For>
-  </ul>
+      <p className="streamMeta">{string(`Last event: ${streamLastEventKind->Option.getOr("none")}`)}</p>
+
+      <div className="serverForm">
+        <input
+          id="server-url-input"
+          type_="text"
+          value={serverDraft}
+          onInput={event => {
+            let value = event->JsxEvent.Form.target->getInputValue
+            onServerDraftChange(value)
+          }}
+          placeholder="https://your-opencode-server"
+        />
+        <button id="server-apply-btn" className="refreshBtn" onClick={_ => onApplyServer()}>
+          {string("Apply")}
+        </button>
+        <button id="server-reset-btn" className="ghostBtn" onClick={_ => onResetServer()}>
+          {string("Reset")}
+        </button>
+        <button id="server-refresh-btn" className="ghostBtn" onClick={_ => onRefreshServer()}>
+          {string("Refresh")}
+        </button>
+      </div>
+    </section>
+}
+
+module SessionsEventList = {
+  @jsx.component
+  let make = (
+    ~sessions: array<OpencodeClient.sessionSummary>,
+    ~sessionStatuses: array<OpencodeClient.sessionStatusItem>,
+    ~sessionQuery: option<OpencodeClient.sessionQuery>,
+  ) => {
+    let routeDirectory = routeDirectoryForSessions(sessionQuery)
+    <ul className="eventList">
+      <For
+        each_={sessions}
+        fallback_={
+          <li className="eventRow">
+            <span className="loadingText">{string("No sessions matched the current filters")}</span>
+          </li>
+        }>
+        {(session, index) => {
+          let status = findSessionStatus(sessionStatuses, session.id)
+          <li className="eventRow">
+            <span className="eventIndex">{string(`#${index()->Int.toString}`)}</span>
+            <span className="eventKind">{string(session.id)}</span>
+            <span className="sessionMeta">{string(renderSessionSubtitle(session))}</span>
+            <span className={if status == Some(#running) {"badge hot"} else {"badge"}}>
+              {string(renderSessionStatus(status))}
+            </span>
+            <R.Link
+              href_={`/${routeDirectory}/session/${session.id}`}
+              inactiveClass_="inlineLink"
+              activeClass_="inlineLink">
+              {string("open")}
+            </R.Link>
+          </li>
+        }}
+      </For>
+    </ul>
+  }
 }
 
 let composerModelStorageKey = "opencode.settings.dat:composerModelOverride"
