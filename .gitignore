@@ -12,3 +12,7 @@ lib/ocaml/
 .turbo/
 packages/rescript-show-ppx-native/_build/
 packages/rescript-show-ppx-native/fixtures/*.ast
+.cachebro/
+.direnv/
+.vscode/
+examples/opencode/upstream-ref/

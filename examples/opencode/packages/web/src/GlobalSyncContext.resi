@@ -9,11 +9,11 @@ type t = {
 
 let use: unit => t
 
-@react.component
+@jsx.component
 let make: (
   ~client: accessor<OpencodeClient.t>,
-  ~onOpen: (unit => unit)=?,
-  ~onError: (string => unit)=?,
-  ~onEvent: (OpencodeEvent.t => unit)=?,
+  ~onOpen: unit => unit=?,
+  ~onError: string => unit=?,
+  ~onEvent: OpencodeEvent.t => unit=?,
   ~children: element,
 ) => element

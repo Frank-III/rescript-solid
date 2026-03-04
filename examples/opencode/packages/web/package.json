@@ -17,7 +17,9 @@
     "solid-js": "^1.9.9"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.1.17",
     "rescript": "13.0.0-alpha.1",
+    "tailwindcss": "^4.1.17",
     "vite": "^7.1.9",
     "vite-plugin-solid": "^2.11.8"
   }

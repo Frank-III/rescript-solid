@@ -1,6 +1,7 @@
 import path from "node:path"
 import {fileURLToPath} from "node:url"
 import {defineConfig} from "vite"
+import tailwindcss from "@tailwindcss/vite"
 import solid from "vite-plugin-solid"
 
 const thisDir = path.dirname(fileURLToPath(import.meta.url))
@@ -10,6 +11,7 @@ const runtimeDir = path.dirname(runtimePackagePath)
 
 export default defineConfig({
   plugins: [
+    tailwindcss(),
     solid({
       dev: true,
       hot: true,

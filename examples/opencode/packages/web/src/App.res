@@ -5,9 +5,6 @@ module EventReducer = GlobalEventReducer
 module For = SolidJSX.For
 
 @get external getInputValue: {..} => string = "value"
-@get external getKeyboardKey: JsxEvent.Keyboard.t => string = "key"
-@get external getKeyboardShiftKey: JsxEvent.Keyboard.t => bool = "shiftKey"
-@send external preventDefault: JsxEvent.Keyboard.t => unit = "preventDefault"
 @val external browserStorage: option<{..}> = "window.localStorage"
 @send external storageGetItem: ({..}, string) => Nullable.t<string> = "getItem"
 @send external storageSetItem: ({..}, string, string) => unit = "setItem"
@@ -45,12 +42,6 @@ type trackedTodoState = {
 type trackedDiffState = {
   sessionId: string,
   diff: array<OpencodeEvent.fileDiff>,
-}
-
-type conversationRow = {
-  message: OpencodeEvent.messageSnapshot,
-  text: string,
-  partCount: int,
 }
 
 let renderProject = (project: option<OpencodeClient.project>): string =>
@@ -103,32 +94,6 @@ let messageRoleClass = (role: option<OpencodeEvent.messageRole>): string =>
   | None => "chatUnknown"
   }
 
-let renderTrackedPartFragment = (part: trackedPart): string =>
-  switch part.text->String.trim {
-  | "" =>
-    if part.streamedChars > 0 {
-      `[streaming ${part.streamedChars->Int.toString} chars]`
-    } else {
-      ""
-    }
-  | _ => part.text
-  }
-
-let combineTrackedPartText = (parts: array<trackedPart>): string =>
-  parts->Array.reduce("", (combined, part) => {
-    let fragment = part->renderTrackedPartFragment
-    if fragment == "" {
-      combined
-    } else if combined == "" {
-      fragment
-    } else {
-      `${combined}\n${fragment}`
-    }
-  })
-
-let reverseItems = (items: array<'a>): array<'a> =>
-  items->Array.reduce([], (acc, item) => Array.concat([item], acc))
-
 let countRunningSessions = (items: array<OpencodeClient.sessionStatusItem>): int =>
   items->Array.reduce(0, (count, item) =>
     switch item.status {
@@ -149,19 +114,6 @@ let findSessionStatus = (items: array<OpencodeClient.sessionStatusItem>, session
       } else {
         None
       }
-    }
-  )
-
-let countTrackedQueueRequests = (
-  ~items: array<trackedQueueRequest>,
-  ~sessionId: string,
-  ~queue: OpencodeEvent.queueKind,
-): int =>
-  items->Array.reduce(0, (count, item) =>
-    if item.queue == queue && item.sessionId == sessionId {
-      count + 1
-    } else {
-      count
     }
   )
 
@@ -209,28 +161,6 @@ let upsertTrackedDiffState = (
   let remaining = items->Array.filter(item => item.sessionId != sessionId)
   [{sessionId, diff}, ...remaining]
 }
-
-let trackedTodoCountForSession = (items: array<trackedTodoState>, sessionId: string): int =>
-  items
-  ->Array.findMap(item =>
-    if item.sessionId == sessionId {
-      Some(item.todos->Array.length)
-    } else {
-      None
-    }
-  )
-  ->Option.getOr(0)
-
-let trackedDiffFileCountForSession = (items: array<trackedDiffState>, sessionId: string): int =>
-  items
-  ->Array.findMap(item =>
-    if item.sessionId == sessionId {
-      Some(item.diff->Array.length)
-    } else {
-      None
-    }
-  )
-  ->Option.getOr(0)
 
 let upsertTrackedMessage = (
   ~items: array<trackedMessage>,
@@ -1283,45 +1213,30 @@ let make = (~defaultServer: string) => {
     let isRouting = R.useIsRouting()
     let location = R.useLocation()
     let server = serverValue
+    let sidebarSessions = createMemo(() => {
+      let routeDirectory = routeDirectoryForSessions(sessionQuery())
+      let statuses = sessionStatuses()
+      sessions()
+      ->Array.map(session =>
+        (
+          {
+            id: session.id,
+            href: `/${routeDirectory}/session/${session.id}`,
+            isRunning: findSessionStatus(statuses, session.id) == Some(#running),
+          }: AppShell.sidebarSessionItem
+        )
+      )
+    })
 
     AppProviders.routerRoot(
-      ~children=<main className="page">
-        <header className="hero">
-          <h1> {string("OpenCode Web Reimplement (ReScript)")} </h1>
-          <p> {string("Client SDK against the existing OpenCode server")} </p>
-        </header>
-
-        <nav className="navBar">
-          <R.Link href_="/" inactiveClass_="navItem" activeClass_="navItem active">
-            {string("Overview")}
-          </R.Link>
-          <R.Link href_="/sessions" inactiveClass_="navItem" activeClass_="navItem active">
-            {string("Sessions")}
-          </R.Link>
-          <R.Link href_="/workspace/session" inactiveClass_="navItem" activeClass_="navItem active">
-            {string("Workspace")}
-          </R.Link>
-        </nav>
-
-        <div className="actionBar">
-          <button className="ghostBtn" onClick={_ => platformValue.back()}>
-            {string("Back")}
-          </button>
-          <button className="ghostBtn" onClick={_ => platformValue.forward()}>
-            {string("Forward")}
-          </button>
-          <button className="ghostBtn" onClick={_ => platformValue.restart()}>
-            {string("Reload")}
-          </button>
-          <button
-            className="ghostBtn"
-            onClick={_ => platformValue.openLink("https://github.com/anomalyco/opencode")}
-          >
-            {string("Open Upstream")}
-          </button>
-        </div>
-
-        <ServerStatusPanel
+      ~children=<AppShell
+        children={props.children}
+        sidebarSessions={sidebarSessions()}
+        onBack={_ => platformValue.back()}
+        onForward={_ => platformValue.forward()}
+        onReload={_ => platformValue.restart()}
+        onOpenUpstream={_ => platformValue.openLink("https://github.com/anomalyco/opencode")}
+        serverStatusPanel={<ServerStatusPanel
           isRouting={isRouting()}
           activeServer={server.activeServer()}
           locationPathname={location.pathname}
@@ -1334,129 +1249,66 @@ let make = (~defaultServer: string) => {
           onApplyServer={_ => server.applyServer()}
           onResetServer={_ => server.resetServer()}
           onRefreshServer={_ => server.refresh()}
-        />
-
-        {props.children}
-      </main>,
+        />}
+      />,
     )
   }
 
   let overviewPage = _ => {
     let sync = GlobalSyncContext.use()
-    <section className="panel">
-      <h2> {string("Overview")} </h2>
-      <ul className="summaryList">
-        <li>
-          <strong> {string("Health")} </strong>
-          <span> {string(healthText())} </span>
-        </li>
-        <li>
-          <strong> {string("Project")} </strong>
-          <span> {string(projectText())} </span>
-        </li>
-        <li>
-          <strong> {string("Sessions")} </strong>
-          <span> {string(sessions()->Array.length->Int.toString)} </span>
-        </li>
-        <li>
-          <strong> {string("Projects")} </strong>
-          <span> {string(projects()->Array.length->Int.toString)} </span>
-        </li>
-        <li>
-          <strong> {string("Last Event")} </strong>
-          <span> {string(sync.lastEventKind()->Option.getOr("none"))} </span>
-        </li>
-        <li>
-          <strong> {string("Running Sessions")} </strong>
-          <span> {string(sessionStatuses()->countRunningSessions->Int.toString)} </span>
-        </li>
-      </ul>
-      <ul className="projectList">
-        {projects()
-        ->Array.mapWithIndex((project, index) =>
-          <li className="projectRow">
-            <span className="eventIndex"> {string(`#${index->Int.toString}`)} </span>
-            <span> {string(renderProjectLabel(project))} </span>
-          </li>
+    let overviewProjects =
+      projects()
+      ->Array.map(project =>
+        (
+          {
+            label: renderProjectLabel(project),
+          }: OverviewPage.projectRow
         )
-        ->array}
-      </ul>
-      {@show
-      switch state() {
-      | Failed(message) => <p className="errorText"> {string(`Request failed: ${message}`)} </p>
-      | Loading => <p className="loadingText"> {string("Loading ...")} </p>
-      | Ready => <p className="okText"> {string("Data loaded from server")} </p>
-      }}
-    </section>
+      )
+    let overviewStatus: OverviewPage.statusLine = switch state() {
+    | Failed(message) => {className: "errorText", text: `Request failed: ${message}`}
+    | Loading => {className: "loadingText", text: "Loading ..."}
+    | Ready => {className: "okText", text: "Data loaded from server"}
+    }
+
+    <OverviewPage
+      activeServer={activeServer()}
+      healthText={healthText()}
+      projectText={projectText()}
+      sessionCount={sessions()->Array.length}
+      projectCount={projects()->Array.length}
+      lastEvent={sync.lastEventKind()->Option.getOr("none")}
+      runningSessionCount={sessionStatuses()->countRunningSessions}
+      projects={overviewProjects}
+      statusLine={overviewStatus}
+    />
   }
 
   let sessionsPage = _ =>
-    <section className="panel">
-      <h2> {string("Sessions")} </h2>
-      <div className="queryGrid">
-        <label>
-          <span> {string("Directory")} </span>
-          <input
-            id="sessions-directory-filter"
-            type_="text"
-            value={sessionDirectoryDraft()}
-            onInput={event => {
-              let value = event->JsxEvent.Form.target->getInputValue
-              setSessionDirectoryDraft(_ => value)
-            }}
-            placeholder="workspace"
-          />
-        </label>
-        <label>
-          <span> {string("Search")} </span>
-          <input
-            id="sessions-search-filter"
-            type_="text"
-            value={sessionSearchDraft()}
-            onInput={event => {
-              let value = event->JsxEvent.Form.target->getInputValue
-              setSessionSearchDraft(_ => value)
-            }}
-            placeholder="title text"
-          />
-        </label>
-        <label>
-          <span> {string("Limit")} </span>
-          <input
-            id="sessions-limit-filter"
-            type_="number"
-            value={sessionLimitDraft()}
-            onInput={event => {
-              let value = event->JsxEvent.Form.target->getInputValue
-              setSessionLimitDraft(_ => value)
-            }}
-            placeholder="25"
-            min="1"
-          />
-        </label>
-      </div>
-      <div className="queryActions">
-        <button
-          id="sessions-apply-filters-btn"
-          className="refreshBtn"
-          onClick={_ => applySessionFilters()}
-        >
-          {string("Apply filters")}
-        </button>
-        <button
-          id="sessions-clear-filters-btn" className="ghostBtn" onClick={_ => clearSessionFilters()}
-        >
-          {string("Clear")}
-        </button>
-        <span className="streamMeta">
-          {string(`Active query: ${sessionQuery()->renderSessionQuery}`)}
-        </span>
-      </div>
-
-      <SessionsEventList
+    <SessionsPage
+      directoryDraft={sessionDirectoryDraft()}
+      searchDraft={sessionSearchDraft()}
+      limitDraft={sessionLimitDraft()}
+      onDirectoryDraftChange={value => setSessionDirectoryDraft(_ => value)}
+      onSearchDraftChange={value => setSessionSearchDraft(_ => value)}
+      onLimitDraftChange={value => setSessionLimitDraft(_ => value)}
+      onApplyFilters={_ => applySessionFilters()}
+      onClearFilters={_ => clearSessionFilters()}
+      activeQueryText={sessionQuery()->renderSessionQuery}
+      eventsList=<SessionsEventList
         sessions={sessions()} sessionStatuses={sessionStatuses()} sessionQuery={sessionQuery()}
       />
-    </section>
+    />
+
+  let reactivityProbePage = _ =>
+    <ReactivityProbePage
+      streamEventCount={streamEventCount()}
+      recentEventCount={recentEvents()->Array.length}
+      trackedMessageCount={trackedMessages()->Array.length}
+      trackedPartCount={trackedParts()->Array.length}
+      sessionCount={sessions()->Array.length}
+      activeSessionId={focusedSessionId()}
+    />
 
   let dirIndexPage = _ => {
     let params = R.useParams()
@@ -1486,142 +1338,48 @@ let make = (~defaultServer: string) => {
       }
     })
 
-    let selected = sessions()->Array.reduce(None, (found, item) =>
-      switch found {
-      | Some(_) => found
-      | None =>
-        if item.id == sessionId {
-          Some(item)
-        } else {
-          None
-        }
-      }
+    let derived = SessionPageController.derive(
+      ~sessionId,
+      ~sessionQueryText=sessionQuery()->renderSessionQuery,
+      ~sessions=sessions(),
+      ~focusedSession=focusedSession(),
+      ~sessionStatuses=sessionStatuses(),
+      ~trackedQueueRequests=trackedQueueRequests()->Array.map(item =>
+        ({queue: item.queue, sessionId: item.sessionId}: SessionPageController.queueRequest)
+      ),
+      ~trackedMessages=trackedMessages()->Array.map(item =>
+        ({sessionId: item.sessionId, message: item.message}: SessionPageController.trackedMessage)
+      ),
+      ~trackedParts=trackedParts()->Array.map(item =>
+        (
+          {
+            sessionId: item.sessionId,
+            messageId: item.messageId,
+            streamedChars: item.streamedChars,
+            text: item.text,
+          }: SessionPageController.trackedPart
+        )
+      ),
+      ~trackedTodos=trackedTodos()->Array.map(item =>
+        (
+          {
+            sessionId: item.sessionId,
+            todoCount: item.todos->Array.length,
+          }: SessionPageController.trackedTodo
+        )
+      ),
+      ~trackedDiffs=trackedDiffs()->Array.map(item =>
+        (
+          {
+            sessionId: item.sessionId,
+            diffFileCount: item.diff->Array.length,
+          }: SessionPageController.trackedDiff
+        )
+      ),
     )
 
-    let focusedMatch = switch focusedSession() {
-    | Some(session) if sessionId == "latest" || session.id == sessionId => Some(session)
-    | _ => None
-    }
-
-    let hasSessionMetadata = selected->Option.isSome || focusedMatch->Option.isSome
-
-    let displayedSession = switch selected {
-    | Some(session) => Some(session)
-    | None =>
-      switch focusedMatch {
-      | Some(session) => Some(session)
-      | None =>
-        if sessionId == "latest" {
-          None
-        } else {
-          Some({
-            id: sessionId,
-            title: None,
-            updatedAt: None,
-          })
-        }
-      }
-    }
-
-    let counterSessionId = if sessionId == "latest" {
-      switch displayedSession {
-      | Some(session) => session.id
-      | None => sessionId
-      }
-    } else {
-      sessionId
-    }
-    let pendingPermissionCount = () =>
-      countTrackedQueueRequests(
-        ~items=trackedQueueRequests(),
-        ~sessionId=counterSessionId,
-        ~queue=#permission,
-      )
-    let pendingQuestionCount = () =>
-      countTrackedQueueRequests(
-        ~items=trackedQueueRequests(),
-        ~sessionId=counterSessionId,
-        ~queue=#question,
-      )
-    let trackedSessionMessages = () =>
-      trackedMessages()->Array.filter(item => item.sessionId == counterSessionId)
-    let trackedSessionParts = () =>
-      trackedParts()->Array.filter(item => item.sessionId == counterSessionId)
-    let trackedTodoCount = () => trackedTodoCountForSession(trackedTodos(), counterSessionId)
-    let trackedDiffFileCount = () =>
-      trackedDiffFileCountForSession(trackedDiffs(), counterSessionId)
-    let messageCount = () => trackedSessionMessages()->Array.length
-    let messagePartCount = () => trackedSessionParts()->Array.length
-    let streamedCharCount = () =>
-      trackedSessionParts()->Array.reduce(0, (count, item) => count + item.streamedChars)
-    let routeStatus = () => findSessionStatus(sessionStatuses(), counterSessionId)
-    let hasSessionActivity = () =>
-      routeStatus()->Option.isSome ||
-      pendingPermissionCount() > 0 ||
-      pendingQuestionCount() > 0 ||
-      trackedTodoCount() > 0 ||
-      trackedDiffFileCount() > 0 ||
-      messageCount() > 0 ||
-      messagePartCount() > 0 ||
-      streamedCharCount() > 0
-    let effectiveRouteStatus = () =>
-      switch routeStatus() {
-      | Some(status) => Some(status)
-      | None =>
-        if hasSessionActivity() {
-          Some(#running)
-        } else {
-          None
-        }
-      }
-    let conversationRows = () => {
-      let sessionParts = trackedSessionParts()
-      let knownMessages = trackedSessionMessages()->Array.map(item => item.message)
-      let mergedMessages = sessionParts->Array.reduce(knownMessages, (messages, part) => {
-        let exists = messages->Array.some(message => message.id == part.messageId)
-        if exists {
-          messages
-        } else {
-          let inferredMessage: OpencodeEvent.messageSnapshot = {
-            id: part.messageId,
-            sessionId: part.sessionId,
-            role: None,
-          }
-          Array.concat([inferredMessage], messages)
-        }
-      })
-
-      mergedMessages
-      ->reverseItems
-      ->Array.map(message => {
-        let messageParts =
-          sessionParts
-          ->Array.filter(part => part.messageId == message.id)
-          ->reverseItems
-        let combinedText = messageParts->combineTrackedPartText
-        let row: conversationRow = {
-          message,
-          text: switch combinedText->String.trim {
-          | "" => "[awaiting streamed content]"
-          | _ => combinedText
-          },
-          partCount: messageParts->Array.length,
-        }
-        row
-      })
-      ->Array.filter(row => row.partCount > 0 || row.message.role != None)
-    }
-
-    let composerTargetSessionId = if sessionId == "latest" {
-      switch displayedSession {
-      | Some(session) => session.id
-      | None => sessionId
-      }
-    } else {
-      sessionId
-    }
-
-    let canSendComposer = composerTargetSessionId != "" && composerTargetSessionId != "latest"
+    let canSendComposer =
+      derived.composerTargetSessionId != "" && derived.composerTargetSessionId != "latest"
 
     let sendComposer = async () => {
       let prompt = composerDraft()->String.trim
@@ -1631,19 +1389,19 @@ let make = (~defaultServer: string) => {
       } else if !canSendComposer {
         setComposerError(_ => Some("Select a concrete session before sending a prompt"))
       } else {
-        let localNonce = `${streamEventCount()->Int.toString}-${messagePartCount()->Int.toString}-${prompt
+        let localNonce = `${streamEventCount()->Int.toString}-${derived.messagePartCount->Int.toString}-${prompt
           ->String.length
           ->Int.toString}`
-        let localMessageId = `local-user-message-${composerTargetSessionId}-${localNonce}`
+        let localMessageId = `local-user-message-${derived.composerTargetSessionId}-${localNonce}`
         let localPartId = `local-user-part-${localNonce}`
         let optimisticMessage: OpencodeEvent.messageSnapshot = {
           id: localMessageId,
-          sessionId: composerTargetSessionId,
+          sessionId: derived.composerTargetSessionId,
           role: Some(OpencodeEvent.UserRole),
         }
         let optimisticPart: OpencodeEvent.partSnapshot = {
           id: localPartId,
-          sessionId: composerTargetSessionId,
+          sessionId: derived.composerTargetSessionId,
           messageId: localMessageId,
           partType: Some(OpencodeEvent.TextPart),
         }
@@ -1655,7 +1413,7 @@ let make = (~defaultServer: string) => {
           let withPart = upsertTrackedPart(~items, ~part=optimisticPart)
           withPart->Array.map(item =>
             if (
-              item.sessionId == composerTargetSessionId &&
+              item.sessionId == derived.composerTargetSessionId &&
               item.messageId == localMessageId &&
               item.part.id == localPartId
             ) {
@@ -1668,10 +1426,10 @@ let make = (~defaultServer: string) => {
             }
           )
         })
-        rememberPendingComposerText(~sessionId=composerTargetSessionId, ~text=prompt)
+        rememberPendingComposerText(~sessionId=derived.composerTargetSessionId, ~text=prompt)
         setComposerDraft(_ => "")
-        setFocusedSessionId(_ => Some(composerTargetSessionId))
-        let _ = loadFocusedSessionById(~sessionId=composerTargetSessionId)
+        setFocusedSessionId(_ => Some(derived.composerTargetSessionId))
+        let _ = loadFocusedSessionById(~sessionId=derived.composerTargetSessionId)
         let _ = refreshSessionSlice(~query=sessionQuery())
         let model = switch composerModelDraft()->normalizeQueryText {
         | Some(value) => resolveModelSelection(~options=composerModelOptions(), ~value)
@@ -1679,13 +1437,13 @@ let make = (~defaultServer: string) => {
         }
         switch await OpencodeClient.sendSessionTextMessage(
           client(),
-          ~sessionId=composerTargetSessionId,
+          ~sessionId=derived.composerTargetSessionId,
           ~text=prompt,
           ~model?,
         ) {
         | Ok() => ()
         | Error(error) => {
-            clearPendingComposerEntry(~sessionId=composerTargetSessionId, ~entryId=localMessageId)
+            clearPendingComposerEntry(~sessionId=derived.composerTargetSessionId, ~entryId=localMessageId)
             setComposerError(_ => Some(`Send failed: ${OpencodeClient.errorToString(error)}`))
           }
         }
@@ -1722,320 +1480,124 @@ let make = (~defaultServer: string) => {
       }
     }
 
-    let sessionBody = {
-      <div className="sessionBody">
-        <div className="sessionMainStack">
-          <section className="panel sessionHeaderPanel">
-            <h2> {string(`Workspace ${dir}`)} </h2>
-            <p className="sessionRoute"> {string(`Session Route ID: ${sessionId}`)} </p>
-            <p className="sessionRoute">
-              {string(`Session Status: ${effectiveRouteStatus()->renderSessionStatus}`)}
-            </p>
-            {@show
-            switch displayedSession {
-            | Some(session) =>
-              <p>
-                {string(
-                  if hasSessionMetadata {
-                    `Matched: ${renderSessionSubtitle(session)}`
-                  } else {
-                    `Route session: ${session.id} (metadata pending)`
-                  },
-                )}
-              </p>
-            | None => @show
-              switch hasSessionActivity() {
-              | true =>
-                <p className="okText">
-                  {string(
-                    "Session activity is flowing; metadata list is still syncing for this route.",
-                  )}
-                </p>
-              | false =>
-                <p className="loadingText">
-                  {string(
-                    "No matching session in current list. Fetching from server may still be pending.",
-                  )}
-                </p>
-              }
-            }}
-          </section>
+    let conversationPanelRows = () =>
+      derived.conversationRows
+      ->Array.map(row =>
+        (
+          {
+            roleLabel: row.message.role->renderMessageRole,
+            roleClass: row.message.role->messageRoleClass,
+            messageId: row.message.id,
+            text: row.text,
+          }: SessionConversationPanel.row
+        )
+      )
 
-          <section className="panel sessionTimelinePanel">
-            <h3> {string("Timeline")} </h3>
-            <p className="sessionRoute"> {string("Recent sessions in current workspace scope")} </p>
-            <ul className="sessionMiniList">
-              {sessions()
-              ->Array.map(item =>
-                <li
-                  className={if item.id == sessionId {
-                    "miniSessionRow active"
-                  } else {
-                    "miniSessionRow"
-                  }}
-                >
-                  <span className="eventKind"> {string(item.id)} </span>
-                  <span className="sessionMeta"> {string(renderSessionSubtitle(item))} </span>
-                </li>
-              )
-              ->array}
-            </ul>
-          </section>
+    let composerViewModelOptions = () =>
+      composerModelOptions()
+      ->Array.map(option =>
+        (
+          {
+            value: option.value,
+            label: option.label,
+          }: SessionComposerRegion.modelOption
+        )
+      )
 
-          <section className="panel sessionComposerPanel">
-            <h3> {string("Composer")} </h3>
-            <p className="sessionRoute">
-              {string("Prompt dock for continuing the selected session")}
-            </p>
-            <div className="composerModelRow">
-              <p className="sessionRoute"> {string("Model override (optional)")} </p>
-              <select
-                id="composer-model-select"
-                className="composerModelSelect"
-                value={composerModelSelectValue()}
-                onInput={event => {
-                  let value = event->JsxEvent.Form.target->getInputValue
-                  applyComposerModelSelection(value)
-                }}
-              >
-                <option value=""> {string("Default (session model)")} </option>
-                {composerModelOptions()
-                ->Array.map(option =>
-                  <option value={option.value}> {string(option.label)} </option>
-                )
-                ->array}
-                <option value={customModelSentinel}> {string("Custom model...")} </option>
-              </select>
-              {@show
-              switch composerCustomModelEnabled() {
-              | true =>
-                <input
-                  id="composer-model-input"
-                  className="composerModelInput"
-                  placeholder="e.g. anthropic/claude-sonnet-4-5"
-                  value={composerModelDraft()}
-                  onInput={event => {
-                    let value = event->JsxEvent.Form.target->getInputValue
-                    setComposerModelDraft(_ => value)
-                  }}
-                />
-              | false =>
-                <p className="sessionRoute composerModelHint">
-                  {string("Select a preset or use custom for a manual model id.")}
-                </p>
-              }}
-            </div>
-            <textarea
-              className="composerInput"
-              placeholder="Ask OpenCode to continue this session..."
-              value={composerDraft()}
-              onInput={event => {
-                let value = event->JsxEvent.Form.target->getInputValue
-                setComposerDraft(_ => value)
-              }}
-              onKeyDown={event => {
-                let key = event->getKeyboardKey
-                if key == "Enter" && !(event->getKeyboardShiftKey) {
-                  event->preventDefault
-                  let canTrigger = !(
-                    isComposerSending() || composerDraft()->String.trim == "" || !canSendComposer
-                  )
-                  if canTrigger {
-                    let _ = sendComposer()
-                  } else {
-                    ()
-                  }
-                } else {
-                  ()
-                }
-              }}
-            />
-            <div className="queryActions">
-              <button
-                id="composer-send-btn"
-                className="refreshBtn"
-                disabled={isComposerSending() ||
-                composerDraft()->String.trim == "" ||
-                !canSendComposer}
-                onClick={_ => {
-                  let _ = sendComposer()
-                }}
-              >
-                {string(
-                  if isComposerSending() {
-                    "Sending..."
-                  } else {
-                    "Send"
-                  },
-                )}
-              </button>
-              <button
-                id="composer-clear-btn"
-                className="ghostBtn"
-                disabled={isComposerSending() || composerDraft() == ""}
-                onClick={_ => clearComposerDraft()}
-              >
-                {string("Clear draft")}
-              </button>
-            </div>
-            {@show
-            switch composerError() {
-            | Some(error) => <p className="errorText"> {string(error)} </p>
-            | None => <span></span>
-            }}
-          </section>
-
-          <section className="panel sessionTerminalPanel sessionChatPanel">
-            <h3> {string("Conversation")} </h3>
-            <p className="sessionRoute"> {string("Live assistant and user message stream")} </p>
-            {@show
-            switch conversationRows()->Array.length > 0 {
-            | true =>
-              <ul className="chatList">
-                {conversationRows()
-                ->Array.map(row => {
-                  let bubbleClass = row.message.role->messageRoleClass
-                  <li className={`chatRow ${bubbleClass}`}>
-                    <div className="chatMetaRow">
-                      <span className="chatRole">
-                        {string(row.message.role->renderMessageRole)}
-                      </span>
-                      <span className="terminalPartMeta"> {string(row.message.id)} </span>
-                    </div>
-                    <pre className="chatBubbleText"> {string(row.text)} </pre>
-                  </li>
-                })
-                ->array}
-              </ul>
-            | false =>
-              <pre className="terminalStub"> {string("$ waiting for stream output...")} </pre>
-            }}
-          </section>
-        </div>
-
-        {<aside className="sessionSidePanel">
-          <section className="panel sideSection">
-            <h3> {string("Review")} </h3>
-            <p className="sessionRoute">
-              {string("Reducer-routed global activity for this workspace")}
-            </p>
-            {@show
-            switch focusedSessionError() {
-            | Some(error) =>
-              <p className="errorText"> {string(`Server lookup failed: ${error}`)} </p>
-            | None => <span></span>
-            }}
-            {@show
-            switch recentEvents()->Array.length > 0 {
-            | true =>
-              <ul className="sideEventList">
-                {recentEvents()
-                ->Array.map(event =>
-                  <li className="sideEventRow"> {string(renderObservedEvent(event))} </li>
-                )
-                ->array}
-              </ul>
-            | false =>
-              <p className="loadingText"> {string("No events captured from the stream yet")} </p>
-            }}
-          </section>
-          <section className="panel sideSection">
-            <h3> {string("Context")} </h3>
-            {@show
-            switch displayedSession {
-            | Some(session) =>
-              <ul className="summaryList sideSummaryList">
-                <li>
-                  <strong> {string("Session")} </strong>
-                  <span> {string(session.id)} </span>
-                </li>
-                <li>
-                  <strong> {string("Title")} </strong>
-                  <span> {string(session.title->Option.getOr("Untitled"))} </span>
-                </li>
-                <li>
-                  <strong> {string("Updated")} </strong>
-                  <span> {string(session.updatedAt->Option.getOr("Unknown"))} </span>
-                </li>
-                <li>
-                  <strong> {string("Status")} </strong>
-                  <span> {string(effectiveRouteStatus()->renderSessionStatus)} </span>
-                </li>
-              </ul>
-            | None => <p className="loadingText"> {string("No session payload is cached yet")} </p>
-            }}
-            <p className="sessionRoute">
-              {string(`Filter scope: ${sessionQuery()->renderSessionQuery}`)}
-            </p>
-            <p className="sessionRoute">
-              {string(`Known sessions: ${sessions()->Array.length->Int.toString}`)}
-            </p>
-            <p className="sessionRoute">
-              {string(
-                `Running sessions: ${sessionStatuses()
-                  ->Array.reduce(0, (count, item) =>
-                    if item.status == #running {
-                      count + 1
-                    } else {
-                      count
-                    }
-                  )
-                  ->Int.toString}`,
-              )}
-            </p>
-            <p className="sessionRoute">
-              {string(`Pending permissions: ${pendingPermissionCount()->Int.toString}`)}
-            </p>
-            <p className="sessionRoute">
-              {string(`Pending questions: ${pendingQuestionCount()->Int.toString}`)}
-            </p>
-            <p className="sessionRoute">
-              {string(`Todos tracked: ${trackedTodoCount()->Int.toString}`)}
-            </p>
-            <p className="sessionRoute">
-              {string(`Diff files tracked: ${trackedDiffFileCount()->Int.toString}`)}
-            </p>
-            <p className="sessionRoute">
-              {string(`Messages tracked: ${messageCount()->Int.toString}`)}
-            </p>
-            <p className="sessionRoute">
-              {string(`Message parts tracked: ${messagePartCount()->Int.toString}`)}
-            </p>
-            <p className="sessionRoute">
-              {string(`Streamed chars: ${streamedCharCount()->Int.toString}`)}
-            </p>
-          </section>
-          <section className="panel sideSection">
-            <h3> {string("Files")} </h3>
-            {@show
-            switch projects()->Array.length > 0 {
-            | true =>
-              <ul className="sideProjectList">
-                {projects()
-                ->Array.map(project => {
-                  let name = project.name->Option.getOr("Unnamed project")
-                  let path = project.path->Option.getOr("Path unavailable")
-                  <li className="sideProjectRow">
-                    <span className="eventKind"> {string(name)} </span>
-                    <span className="sessionMeta"> {string(path)} </span>
-                  </li>
-                })
-                ->array}
-              </ul>
-            | false => <p className="loadingText"> {string("No project roots loaded from SDK")} </p>
-            }}
-          </section>
-        </aside>}
-      </div>
+    let onComposerSubmitFromKeyboard = () => {
+      let canTrigger = !(
+        isComposerSending() || composerDraft()->String.trim == "" || !canSendComposer
+      )
+      if canTrigger {
+        let _ = sendComposer()
+      }
     }
 
+    let sidePanelSessionInfo = () =>
+      switch derived.displayedSession {
+      | Some(session) =>
+        Some((
+          {
+            id: session.id,
+            title: session.title->Option.getOr("Untitled"),
+            updatedAt: session.updatedAt->Option.getOr("Unknown"),
+            status: derived.effectiveRouteStatus->renderSessionStatus,
+          }: SessionSidePanel.sessionInfo
+        ))
+      | None => None
+      }
+
+    let sidePanelContextLines = () => derived.contextLines
+
+    let sidePanelProjects = () =>
+      projects()
+      ->Array.map(project =>
+        (
+          {
+            name: project.name->Option.getOr("Unnamed project"),
+            path: project.path->Option.getOr("Path unavailable"),
+          }: SessionSidePanel.projectRow
+        )
+      )
+
+    let sidePanelRecentEvents = () => recentEvents()->Array.map(renderObservedEvent)
+    let frameDisplayedSession = switch derived.displayedSession {
+    | Some(session) =>
+      Some((
+        {
+          id: session.id,
+          subtitle: renderSessionSubtitle(session),
+        }: SessionPageFrame.displayedSession
+      ))
+    | None => None
+    }
+
+    let conversationPanel =
+      <SessionConversationPanel rows={conversationPanelRows()} />
+
+    let composerRegion =
+      <SessionComposerRegion
+        modelSelectValue={composerModelSelectValue()}
+        modelOptions={composerViewModelOptions()}
+        customModelSentinel={customModelSentinel}
+        customModelEnabled={composerCustomModelEnabled()}
+        modelDraft={composerModelDraft()}
+        onModelSelectionChange={value => applyComposerModelSelection(value)}
+        onModelDraftInput={value => setComposerModelDraft(_ => value)}
+        composerDraft={composerDraft()}
+        onComposerInput={value => setComposerDraft(_ => value)}
+        isSending={isComposerSending()}
+        canSend={canSendComposer}
+        onSend={_ => {
+          let _ = sendComposer()
+        }}
+        onClear={_ => clearComposerDraft()}
+        onComposerSubmitFromKeyboard={_ => onComposerSubmitFromKeyboard()}
+        composerError={composerError()}
+      />
+
+    let sidePanel =
+      <SessionSidePanel
+        serverLookupError={focusedSessionError()}
+        recentEvents={sidePanelRecentEvents()}
+        sessionInfo={sidePanelSessionInfo()}
+        contextLines={sidePanelContextLines()}
+        projectRows={sidePanelProjects()}
+      />
+
     AppProviders.sessionProviders(
-      ~children=<section className="sessionDetailLayout">
-        {sessionBody}
-        <R.Link href_="/sessions" inactiveClass_="inlineLink" activeClass_="inlineLink">
-          {string("Back to sessions")}
-        </R.Link>
-      </section>,
+      ~children=<SessionPageFrame
+        workspaceDirectory={dir}
+        sessionRouteId={sessionId}
+        statusText={derived.effectiveRouteStatus->renderSessionStatus}
+        displayedSession={frameDisplayedSession}
+        hasSessionMetadata={derived.hasSessionMetadata}
+        hasSessionActivity={derived.hasSessionActivity}
+        conversationPanel={conversationPanel}
+        composerRegion={composerRegion}
+        sidePanel={sidePanel}
+        backHref="/sessions"
+      />,
     )
   }
 
@@ -2043,6 +1605,7 @@ let make = (~defaultServer: string) => {
     <R.Router root_={rootLayout}>
       <R.Route path_="/" component_={overviewPage} />
       <R.Route path_="/sessions" component_={sessionsPage} />
+      <R.Route path_="/dev/reactivity" component_={reactivityProbePage} />
       <R.RouteWrapper path_="/:dir">
         <R.Route path_="/" component_={dirIndexPage} />
         <R.Route path_="/session/:id?" component_={sessionPage} />
