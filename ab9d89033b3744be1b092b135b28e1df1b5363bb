@@ -1,0 +1,146 @@
+examples/opencode/packages/web/src/SessionPageFrame.res
+  4c7b7391fcd5b2e8 10-27,41-42,45-60,70-80,82-83,85-89,91-106,130
+  32569b7359eff0dc 1-9,28-40,43-44,61-69,81,84,90,107-129,131-132
+examples/opencode/packages/web/src/SessionConversationPanel.res
+  cc0cae111ddad142 15-19,23,35-38,40,42
+  32569b7359eff0dc 1-14,20-22,24-34,39,41,43
+examples/opencode/packages/web/package.json
+  e0c852aa0c8f75e0 20,22
+examples/opencode/packages/web/src/ReactivityProbePage.res
+  32569b7359eff0dc 1-109
+examples/opencode/packages/web/src/AppShell.res
+  32569b7359eff0dc 1-86,89-90,93-95,99-109
+examples/opencode/packages/web/src/SessionSidePanel.res
+  32569b7359eff0dc 1-67,71-90,92-138,140-162
+  cc0cae111ddad142 68-70,91
+examples/opencode/packages/web/src/SessionSidePanel.resi
+  32569b7359eff0dc 1-20
+examples/opencode/packages/web/src/OverviewPage.res
+  32569b7359eff0dc 1-97
+examples/opencode/packages/web/src/index.css
+  e0c852aa0c8f75e0 1-6
+  32569b7359eff0dc 8-23,35,37-38,43-46,48-56,59-65,68-70,72-77,80-84,87-90,93-94,97-98,101-102,105-111,114-115,117-118,121-130,133-134,137,140-142,145-150,153-158,161-167,170-179,182-191,195-197,201-203,206-207,210-215,218-220,223-230,233-234,237-238,241-242,245-246,249-250,253-258,263,265,268-276,279-282,285-288,291,294-295,298-301,304-306,309-311,313-314,317-321,324-327,329-331,334-338,341-343,346-349,352-355,358,361-364,367-369,373-376,381-384,387-392,395-399,402-404,408,411,415-418,421-425,428-433,436-442,444-446,449-453,456-457,460-461,464-465,467,470,474-475,478-481,484-492,495-504,507-532,537,540-541,543,547-552,555-557,560-565,568-574,577-578,581-583,586-588,591-594,597-598,603-607,611-617,619,625,629-631,637-639,643-645,648-652,662,665-669,671-674,678-684,687-690,693,697-702,706,709-713,716,720-727,731-733,735,740-747,751,753,758-759,761-763,766-768,772,775,780,784-785,789,792,794-798,803-804,807-809,813-814,819-821,825-829,834-838,843-844,848,856,859-861,865-873,875-880,882-885,888-890,894-896,899-900,902-904,907-918,922,925,927-929,936-938,949-972,974,976-979,981-982,984,987-989,991-992,995-1001,1003-1006,1010,1016-1018,1042-1044,1051-1053,1057-1058,1063-1064,1068-1069,1073-1074,1080-1084,1086-1090,1092-1100,1103-1110,1113-1114,1118-1119,1122,1126,1128,1130,1133-1225,1229-1231,1234-1242,1244-1275,1277,1284,1287-1288,1291-1292,1294,1299,1305-1308,1313-1317,1321-1340,1343-1344,1354,1357-1382,1384-1389,1391-1392,1394-1395,1402-1408,1410-1421,1423,1426-1428,1431,1433,1438-1441,1448,1453-1455,1457-1476,1479-1487,1490,1494,1498,1500,1503-1504,1508-1509,1546-1549
+  9a02e0870375928a 24-28,47,71,116,192,198,259-260,328,339-340,359-360,370,377-378,410,412,542,544,862,874,881,886-887,891-893,897-898,901,905-906,923-924,926,930-932,935,939-941,944-946,975,980,993-994,1002,1015,1019,1024-1025,1035-1036,1045-1048,1055,1059,1062,1085,1091,1101-1102,1111-1112,1115,1121,1123,1127,1129,1131-1132,1276,1278-1279,1290,1293,1304,1345-1346,1349-1350,1383,1390,1393,1396-1401,1409,1432,1434-1437,1442-1447,1449-1452,1456,1477-1478,1488-1489,1510-1514,1517-1543,1545
+examples/opencode/packages/web/src/SessionsPage.res
+  32569b7359eff0dc 1-73
+examples/opencode/packages/web/src/SessionConversationPanel.resi
+  32569b7359eff0dc 1-9
+examples/opencode/packages/web/src/SessionsPage.resi
+  32569b7359eff0dc 1-15
+examples/opencode/packages/web/src/OverviewPage.resi
+  32569b7359eff0dc 1-21
+examples/opencode/packages/web/src/AppShell.resi
+  32569b7359eff0dc 1-16
+examples/opencode/packages/web/src/ReactivityProbePage.resi
+  32569b7359eff0dc 1-9
+examples/opencode/packages/web/src/SessionComposerRegion.resi
+  32569b7359eff0dc 1-23
+examples/opencode/packages/web/src/SessionPageFrame.resi
+  32569b7359eff0dc 1-20
+examples/opencode/packages/web/src/SessionPageController.res
+  32569b7359eff0dc 1-291
+.envrc
+  dd91c639c63f38ca 1
+examples/opencode/packages/web/src/SessionComposerRegion.res
+  32569b7359eff0dc 1-33,40,42-69,71-108,110-111
+  cc0cae111ddad142 34-39,41,70,109
+flake.nix
+  dd91c639c63f38ca 1-34
+examples/opencode/packages/web/src/App.res
+  32569b7359eff0dc 1216-1229,1232-1239,1252-1253,1259-1265,1267-1283,1288-1298,1303-1311,1341-1364,1366-1378,1382,1392,1395,1399,1404,1416,1429,1431-1432,1440,1446,1483-1508,1513,1516-1544,1546,1548-1552,1555-1556,1558-1571,1574-1576,1579-1585,1589-1599,1608
+examples/opencode/packages/web/src/SessionPageController.resi
+  32569b7359eff0dc 1-63
+examples/opencode/packages/web/vite.config.js
+  e0c852aa0c8f75e0 4,14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.8",
+  "base_commit_sha": "ab9d89033b3744be1b092b135b28e1df1b5363bb",
+  "prompts": {
+    "32569b7359eff0dc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4fd7227a-0437-4abe-944c-e75ae0510817",
+        "model": "gpt-5.3-codex-high"
+      },
+      "human_author": "Frank Wang <1454884738@qq.com>",
+      "messages": [],
+      "total_additions": 3717,
+      "total_deletions": 2114,
+      "accepted_lines": 2568,
+      "overriden_lines": 3,
+      "messages_url": "https://usegitai.com/cas/26e609027d0f69f11c42f7f081fbbc57b6775f012288a52ab344d2cc04474b7a"
+    },
+    "4c7b7391fcd5b2e8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1562b080-9ffe-4287-9273-6ce384c09225",
+        "model": "gpt-5.3-codex-high"
+      },
+      "human_author": "Frank Wang <1454884738@qq.com>",
+      "messages": [],
+      "total_additions": 148,
+      "total_deletions": 65,
+      "accepted_lines": 71,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/c3404ae5a6ea87079578e4c32bf5ed5ceaf0032b0d3b56ec8ddc4e40b782e48a"
+    },
+    "9a02e0870375928a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "782367e7-d545-457c-8dd7-dc021967520a",
+        "model": "gpt-5.3-codex-high"
+      },
+      "human_author": "Frank Wang <1454884738@qq.com>",
+      "messages": [],
+      "total_additions": 200,
+      "total_deletions": 91,
+      "accepted_lines": 160,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/ca31651862c555f271871341250648d47336f64aaf1c03d9f4aeb87039358b3b"
+    },
+    "cc0cae111ddad142": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "291ca6bc-0cb1-4811-b339-c1e6639d655e",
+        "model": "gpt-5.3-codex-high"
+      },
+      "human_author": "Frank Wang <1454884738@qq.com>",
+      "messages": [],
+      "total_additions": 62,
+      "total_deletions": 33,
+      "accepted_lines": 25,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/1d12554690bc3be120d18952c6abd0fa620e5efad2f21b2c1f7262ca8be4f8f2"
+    },
+    "dd91c639c63f38ca": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f9b10590-591e-4bb6-8b93-e3d90cb9ddb4",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Frank Wang <1454884738@qq.com>",
+      "messages": [],
+      "total_additions": 75,
+      "total_deletions": 46,
+      "accepted_lines": 35,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/d0f501d7db668c09400f769ec7f1f8d12f966465ec4c6567b5f87275df182e40"
+    },
+    "e0c852aa0c8f75e0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "97862149-eba2-4bb6-a4a2-2640f6239605",
+        "model": "gpt-5.3-codex-high"
+      },
+      "human_author": "Frank Wang <1454884738@qq.com>",
+      "messages": [],
+      "total_additions": 10,
+      "total_deletions": 0,
+      "accepted_lines": 10,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/f42b23ca480b114dc8cd56b387242f5baa986058c49da283c175c24c3359098d"
+    }
+  }
+}
