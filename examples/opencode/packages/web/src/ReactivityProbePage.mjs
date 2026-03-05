@@ -2,9 +2,9 @@
 
 import * as SolidJs from "solid-js";
 import * as Belt_Array from "@rescript/runtime/lib/es6/Belt_Array.mjs";
-import * as H from "solid-js/h";
 import * as Stdlib_Array from "@rescript/runtime/lib/es6/Stdlib_Array.mjs";
 import * as Stdlib_Option from "@rescript/runtime/lib/es6/Stdlib_Option.mjs";
+import * as JsxRuntime from "@solidjs/h/jsx-runtime";
 
 function ReactivityProbePage(props) {
   let match = SolidJs.createSignal([0]);

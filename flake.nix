@@ -19,13 +19,17 @@
             ocamlPackages.ocaml-lsp
             ocamlPackages.ocamlformat
 
-            # OCaml build (opam 5.2.0+ox has ppxlib+ox for ReScript AST compat)
+            # OCaml build (prefer local switch 5.3.0 for PPX tooling)
             opam
             pkg-config
           ];
 
           shellHook = ''
-            eval $(opam env --switch=5.2.0+ox --set-switch 2>/dev/null)
+            if opam switch list --short | grep -q '^5.3.0$'; then
+              eval $(opam env --switch=5.3.0 --set-switch 2>/dev/null)
+            else
+              echo "Missing opam switch 5.3.0. Run: opam switch create 5.3.0 ocaml-base-compiler.5.3.0 && opam install -y dune ppxlib.0.34.0"
+            fi
             echo "OCaml $(ocaml -vnum) + ocaml-lsp ready"
           '';
         };

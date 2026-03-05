@@ -2,10 +2,10 @@
 
 import * as App from "./App.mjs";
 import * as Document from "./Document.mjs";
-import * as H from "solid-js/h";
 import * as WebPlatform from "./WebPlatform.mjs";
-import * as Web from "solid-js/web";
+import * as Web from "@solidjs/web";
 import * as Primitive_option from "@rescript/runtime/lib/es6/Primitive_option.mjs";
+import * as JsxRuntime from "@solidjs/h/jsx-runtime";
 
 function mount() {
   let root = Document.getElementById("app");

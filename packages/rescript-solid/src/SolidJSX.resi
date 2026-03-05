@@ -12,19 +12,37 @@ module Show: {
 
 module ShowOption: {
   @jsx.component
-  let make: (~when_: option<'a>, ~fallback: element=?, ~children: 'a => element, unit) => element
+  let make: (
+    ~when_: option<'a>,
+    ~fallback: element=?,
+    ~children: 'a => element,
+    unit,
+  ) => element
 }
 
 let ppxDefer: (unit => element) => element
 
 module For: {
-  type props<'a> = {
+  type rawProps<'a> = {
     @as("each") each_: array<'a>,
     @as("fallback") fallback_?: element,
-    children: ('a, accessor<int>) => element,
+    @as("keyed") keyed_?: bool,
+    children: (accessor<'a>, accessor<int>) => element,
   }
-  @module("solid-js")
-  external make: Jsx.component<props<'a>> = "For"
+
+  module RawFor: {
+    @module("solid-js")
+    external make: Jsx.component<rawProps<'a>> = "For"
+  }
+
+  @jsx.component
+  let make: (
+    ~each_: array<'a>,
+    ~fallback_: element=?,
+    ~keyed_: bool=?,
+    ~children: ('a, accessor<int>) => element,
+    unit,
+  ) => element
 }
 
 module Index: {
@@ -55,13 +73,31 @@ module Match: {
   external make: Jsx.component<props<'a>> = "Match"
 }
 
-module ErrorBoundary: {
+module Errored: {
   type props = {
-    @as("fallback") fallback: (JsError.t, accessor<unit => unit>) => element,
+    @as("fallback") fallback: (JsError.t, unit => unit) => element,
     children: element,
   }
   @module("solid-js")
-  external make: Jsx.component<props> = "ErrorBoundary"
+  external make: Jsx.component<props> = "Errored"
+}
+
+module ErrorBoundary: {
+  type props = {
+    @as("fallback") fallback: (JsError.t, unit => unit) => element,
+    children: element,
+  }
+  @module("solid-js")
+  external make: Jsx.component<props> = "Errored"
+}
+
+module Loading: {
+  type props = {
+    @as("fallback") fallback_?: element,
+    children: element,
+  }
+  @module("solid-js")
+  external make: Jsx.component<props> = "Loading"
 }
 
 module Suspense: {
@@ -70,7 +106,7 @@ module Suspense: {
     children: element,
   }
   @module("solid-js")
-  external make: Jsx.component<props> = "Suspense"
+  external make: Jsx.component<props> = "Loading"
 }
 
 module SuspenseList: {
@@ -85,15 +121,15 @@ module SuspenseList: {
 
 module Portal: {
   type props = {
-    mount: option<Dom.element>,
+    mount: Dom.element,
     children: element,
   }
-  @module("solid-js/web")
+  @module("@solidjs/web")
   external make: Jsx.component<props> = "Portal"
 }
 
 module Dynamic: {
-  @module("solid-js/web")
+  @module("@solidjs/web")
   external make: Jsx.component<{..}> = "Dynamic"
 }
 
@@ -104,6 +140,6 @@ module Scope: {
 
 module NoHydration: {
   type props = {children: element}
-  @module("solid-js/web")
+  @module("@solidjs/web")
   external make: Jsx.component<props> = "NoHydration"
 }

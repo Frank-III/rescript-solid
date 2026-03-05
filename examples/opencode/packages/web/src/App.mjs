@@ -4,7 +4,6 @@ import * as AppShell from "./AppShell.mjs";
 import * as SolidJs from "solid-js";
 import * as Belt_Array from "@rescript/runtime/lib/es6/Belt_Array.mjs";
 import * as Stdlib_Int from "@rescript/runtime/lib/es6/Stdlib_Int.mjs";
-import * as H from "solid-js/h";
 import * as AppProviders from "./AppProviders.mjs";
 import * as OverviewPage from "./OverviewPage.mjs";
 import * as SessionsPage from "./SessionsPage.mjs";
@@ -25,6 +24,7 @@ import * as GlobalEventReducer from "./GlobalEventReducer.mjs";
 import * as ReactivityProbePage from "./ReactivityProbePage.mjs";
 import * as SessionComposerRegion from "./SessionComposerRegion.mjs";
 import * as SessionPageController from "./SessionPageController.mjs";
+import * as JsxRuntime from "@solidjs/h/jsx-runtime";
 import * as SessionConversationPanel from "./SessionConversationPanel.mjs";
 
 function renderProjectLabel(project) {
@@ -1215,7 +1215,7 @@ function App(props) {
   let sdkValue = {
     client: client
   };
-  SolidJs.onMount(() => {
+  SolidJs.onSettled(() => {
     refreshData(sessionQuery());
   });
   let rootLayout = props => {

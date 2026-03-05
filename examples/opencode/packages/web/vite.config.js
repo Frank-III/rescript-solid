@@ -34,6 +34,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@rescript/runtime": runtimeDir,
+      "solid-js/web": "@solidjs/web",
+      "solid-js/h": "@solidjs/h",
+      "solid-js/store": "solid-js",
     },
   },
   server: {

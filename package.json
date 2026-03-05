@@ -9,13 +9,18 @@
   ],
   "catalog": {
     "rescript": "13.0.0-alpha.1",
-    "solid-js": "^1.9.9",
+    "solid-js": "2.0.0-beta.0",
+    "@solidjs/web": "2.0.0-beta.0",
+    "@solidjs/h": "2.0.0-beta.0",
+
     "@solidjs/router": "^0.15.3",
     "vite": "^7.1.12",
-    "vite-plugin-solid": "^2.11.10"
+    "vite-plugin-solid": "3.0.0-next.0"
   },
   "scripts": {
     "build": "turbo run build",
+    "build:solid2": "bun run -F rescript-show-ppx-native build && bun run -F solid-examples-basic build && bun run -F solid-examples-defer-repro res:build",
+    "build:ppx:native": "bun run -F solid-examples-basic build && bun run -F solid-examples-defer-repro res:build",
     "clean": "turbo run clean",
     "dev": "turbo run dev --parallel",
     "audit:reactivity": "bun scripts/reactivity-audit.mjs",

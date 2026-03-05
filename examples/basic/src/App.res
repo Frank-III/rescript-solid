@@ -8,7 +8,7 @@ let make = () => {
   let (items, _setItems) = createSignal(["Apple", "Banana", "Orange"])
 
   // Test effect
-  createEffect(() => {
+  createTrackEffect(() => {
     Console.log("Counter visibility changed: " ++ (showCounter() ? "visible" : "hidden"))
   })
 
@@ -28,7 +28,7 @@ let make = () => {
     <hr />
 
     <h2> {string("List Example")} </h2>
-    <For each_={items()} fallback_={null}> {(item, _i) => <div> {string(item)} </div>} </For>
+    <For each_={items()} fallback_={Jsx.null}> {(item, _i) => <div> {string(item)} </div>} </For>
 
     <hr />
 
@@ -36,8 +36,7 @@ let make = () => {
     <p> {string("This demonstrates Solid's fine-grained reactivity")} </p>
     <hr />
     <Features />
-    <>
-      <h> {"Should break"->string} </h>
-    </>
+    <hr />
+    <CheckoutOptimistic />
   </div>
 }

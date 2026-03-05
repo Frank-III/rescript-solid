@@ -6,7 +6,8 @@ This package is the robust migration path from the JS source transformer.
 
 ## Current scope
 
-- `@show` rewrite for `switch` on `option` (`Some` + `None`/`_` fallback).
+- `@show` rewrite for `switch` on `option` (`Some` + `None`/`_` fallback)
+  and `bool` (`true` + `false`/`_` fallback).
 - `@defer` is pass-through by default in native PPX.
 - With `RESCRIPT_SHOW_PPX_NATIVE_DEFER=1`, native `@defer` rewrites only
   non-JSX payloads and keeps JSX payloads as pass-through for call-shape
@@ -76,4 +77,11 @@ Executable path:
 
 ```bash
 packages/rescript-show-ppx-native/_build/default/bin/show_ppx_native.exe
+```
+
+Root scripts:
+
+```bash
+bun run build:solid2
+bun run build:ppx:native
 ```

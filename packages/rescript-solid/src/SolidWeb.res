@@ -3,22 +3,22 @@
 open Solid
 
 // Render functions
-@module("solid-js/web")
+@module("@solidjs/web")
 external render: (unit => element, Dom.element) => (unit => unit) = "render"
 
-@module("solid-js/web")
+@module("@solidjs/web")
 external hydrate: (unit => element, Dom.element) => (unit => unit) = "hydrate"
 
-@module("solid-js/web")
+@module("@solidjs/web")
 external renderToString: (unit => element) => string = "renderToString"
 
-@module("solid-js/web")
+@module("@solidjs/web")
 external renderToStringAsync: (unit => element) => promise<string> = "renderToStringAsync"
 
-@module("solid-js/web")
+@module("@solidjs/web")
 external renderToStream: (unit => element) => {..} = "renderToStream"
 
 // isServer check
-@module("solid-js/web")
+@module("@solidjs/web")
 external isServer: bool = "isServer"
 

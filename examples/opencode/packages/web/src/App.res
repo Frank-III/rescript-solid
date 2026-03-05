@@ -800,7 +800,7 @@ let make = (~defaultServer: string) => {
     }
   }
 
-  createEffect(() => {
+  createTrackEffect(() => {
     setStoredComposerModel(composerModelDraft())
   })
 
@@ -1321,7 +1321,7 @@ let make = (~defaultServer: string) => {
     let dir = params->Dict.get("dir")->Option.getOr("workspace")
     let sessionId = params->Dict.get("id")->Option.getOr("latest")
 
-    createEffect(() => {
+    createTrackEffect(() => {
       switch params->Dict.get("id") {
       | None => {
           setFocusedSessionId(_ => None)

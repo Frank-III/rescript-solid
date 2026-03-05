@@ -10,6 +10,9 @@
   "dependencies": {
     "rescript": "catalog:",
     "rescript-solid": "workspace:*",
-    "solid-js": "catalog:"
+    "solid-js": "catalog:",
+    "@solidjs/web": "catalog:",
+    "@solidjs/h": "catalog:"
+
   }
 }

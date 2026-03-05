@@ -92,6 +92,17 @@ let is_none_or_wild pattern =
   | Ppat_any -> true
   | _ -> false
 
+let is_true_pattern pattern =
+  match pattern.ppat_desc with
+  | Ppat_construct ({ txt = Lident "true"; _ }, None) -> true
+  | _ -> false
+
+let is_false_or_wild pattern =
+  match pattern.ppat_desc with
+  | Ppat_construct ({ txt = Lident "false"; _ }, None) -> true
+  | Ppat_any -> true
+  | _ -> false
+
 let rewrite_show expr =
   match expr.pexp_desc with
   | Pexp_match (scrutinee, [ case1; case2 ])
@@ -113,7 +124,13 @@ let rewrite_show expr =
       normalized_match case1.pc_lhs case1.pc_rhs case2.pc_rhs
     | (false, true) when is_none_or_wild case1.pc_lhs ->
       normalized_match case2.pc_lhs case2.pc_rhs case1.pc_rhs
-    | _ -> expr)
+    | _ -> (
+      match (is_true_pattern case1.pc_lhs, is_true_pattern case2.pc_lhs) with
+      | (true, false) when is_false_or_wild case2.pc_lhs ->
+        normalized_match case1.pc_lhs case1.pc_rhs case2.pc_rhs
+      | (false, true) when is_false_or_wild case1.pc_lhs ->
+        normalized_match case2.pc_lhs case2.pc_rhs case1.pc_rhs
+      | _ -> expr))
   | _ -> expr
 
 class mapper =

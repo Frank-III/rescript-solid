@@ -21,7 +21,7 @@ export default defineConfig({
     jsxImportSource: 'solid-js',
   },
   optimizeDeps: {
-    include: ['solid-js', 'solid-js/web'],
+    include: ['solid-js', '@solidjs/web'],
     exclude: ['rescript-solid', 'rescript-solid-router'],
     esbuildOptions: { 
       loader: { '.mjs': 'jsx', '.js': 'jsx' },
@@ -32,6 +32,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@rescript/runtime': rescriptRuntimeDir,
+      'solid-js/web': '@solidjs/web',
+      'solid-js/h': '@solidjs/h',
+      'solid-js/store': 'solid-js',
     }
   },
 })

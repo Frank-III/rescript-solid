@@ -12,21 +12,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@corvu/resizable": "^0.2.5",
-    "@kobalte/core": "^0.13.11",
-    "@solid-primitives/event-listener": "^2.4.3",
-    "@solid-primitives/keyboard": "^1.3.4",
-    "@solid-primitives/map": "^0.7.1",
-    "@solid-primitives/match": "^0.0.100",
-    "@solid-primitives/media": "^2.3.4",
-    "@solid-primitives/resize-observer": "^2.1.4",
-    "@solid-primitives/set": "^0.7.2",
-    "@solid-primitives/trigger": "^1.2.2",
-    "@solidjs/router": "catalog:",
-    "rescript": "catalog:",
     "rescript-solid": "workspace:*",
     "rescript-solid-router": "workspace:*",
-    "solid-js": "catalog:"
+    "solid-js": "catalog:",
+    "@solidjs/web": "catalog:",
+    "@solidjs/h": "catalog:",
+
+    "@solidjs/router": "catalog:"
   },
   "devDependencies": {
     "vite": "catalog:",

@@ -5,10 +5,10 @@ import * as Home from "./Home.mjs";
 import * as User from "./User.mjs";
 import * as Stories from "./Stories.mjs";
 import * as NotFound from "./NotFound.mjs";
-import * as H from "solid-js/h";
 import * as BindingsAudit from "./BindingsAudit.mjs";
 import * as Router from "@solidjs/router";
 import * as ComplexReactivity from "./ComplexReactivity.mjs";
+import * as JsxRuntime from "@solidjs/h/jsx-runtime";
 
 function rootLayout(props) {
   let isRouting = Router.useIsRouting();

@@ -17,6 +17,7 @@
   "files": [
     "src/*.res",
     "src/*.resi",
+    "src/SolidActionBridge.mjs",
     "src/*.res.mjs",
     "rescript.json",
     "README.md"
@@ -28,7 +29,10 @@
   },
   "peerDependencies": {
     "rescript": ">=13.0.0-alpha.1 <14.0.0",
-    "solid-js": ">=1.8.0",
+    "solid-js": ">=2.0.0-beta.0 <3.0.0",
+    "@solidjs/web": ">=2.0.0-beta.0 <3.0.0",
+    "@solidjs/h": ">=2.0.0-beta.0 <3.0.0",
+
     "@kobalte/core": ">=0.13.0",
     "@solid-primitives/match": ">=0.0.100",
     "@corvu/resizable": ">=0.2.0",
@@ -74,6 +78,9 @@
   },
   "devDependencies": {
     "rescript": "catalog:",
-    "solid-js": "catalog:"
+    "solid-js": "catalog:",
+    "@solidjs/web": "catalog:",
+    "@solidjs/h": "catalog:"
+
   }
 }

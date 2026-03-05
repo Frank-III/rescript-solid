@@ -31,7 +31,7 @@ let make = (
   let (eventCount, setEventCount) = createSignal(0)
   let (lastEventKind, setLastEventKind) = createSignal(None)
 
-  createEffect(() => {
+  createTrackEffect(() => {
     let sdk = client()
     let subscription =
       OpencodeClient.subscribeGlobalEvents(
